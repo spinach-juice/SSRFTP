@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sudo apt-get install g++ make libboost-dev -y
+sudo apt-get install g++ make libboost-all-dev -y
