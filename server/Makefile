@@ -1,5 +1,5 @@
 CCOMP=g++
-CFLAGS=-O3 -Wall
+CFLAGS=-O3 -Wall -std=c++11
 LIBFLAGS=-lboost_system -pthread
 
 COMMON_DIR=../common

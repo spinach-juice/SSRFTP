@@ -21,6 +21,7 @@ private:
 	unsigned short calc_checksum();
 
 	char* data;
+	unsigned short data_size;
 };
 
 Packet build_client_start(char* md5_chksum, unsigned long long file_size, unsigned long num_shards, unsigned short trans_id, char* destination_path, unsigned short path_length);
