@@ -14,7 +14,7 @@ public:
 	char const * const bytestream();
 	bool verify_checksum();
 	std::string type();
-	unsigned short size();
+	unsigned int size();
 
 private:
 
