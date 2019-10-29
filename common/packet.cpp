@@ -1,5 +1,6 @@
 #include "packet.h"
 #include "util.h"
+#include <vector>
 
 Packet::Packet(unsigned char const * const bytestream)
 {
@@ -164,8 +165,48 @@ Packet build_shard_end(unsigned short const trans_id)
 
 Packet build_shard_request(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned long const num_missing_shards)
 {
-	unsigned char placeholder[12] = {'0'};
-	Packet p(placeholder);
+	unsigned long * ordered_shards = new unsigned long[num_missing_shards];
+	unsigned long i = 0;
+	for(; i < num_missing_shards; i++)
+		ordered_shards[i] = missing_shards[i];
+	ulong_array_sort(ordered_shards, num_missing_shards);
+
+	std::vector<unsigned long> singles = ulong_array_singles(ordered_shards, num_missing_shards);
+	std::vector<unsigned long> ranges = ulong_array_ranges(ordered_shards, num_missing_shards);
+	unsigned short packet_length = 11 + 4 * (singles.size() + ranges.size());
+
+	unsigned char * bytes = new unsigned char[packet_length + 1];
+	bytes[0] = 0x00;
+	bytes[1] = 0x03;
+	bytes[2] = (unsigned char)((packet_length & 0xff00) >> 8);
+	bytes[3] = (unsigned char)(packet_length & 0x00ff);
+	bytes[6] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[7] = (unsigned char)(trans_id & 0x00ff);
+	bytes[8] = (unsigned char)((singles.size() & 0xff00) >> 8);
+	bytes[9] = (unsigned char)(singles.size() & 0x00ff);
+	bytes[10] = (unsigned char)(((ranges.size() / 2) & 0xff00) >> 8);
+	bytes[11] = (unsigned char)((ranges.size() / 2) & 0x00ff);
+	for(i = 0; i < singles.size(); i++)
+	{
+		bytes[12 + (4 * i)] = (unsigned char)((singles.at(i) & 0xff000000) >> 24);
+		bytes[13 + (4 * i)] = (unsigned char)((singles.at(i) & 0x00ff0000) >> 16);
+		bytes[14 + (4 * i)] = (unsigned char)((singles.at(i) & 0x0000ff00) >> 8);
+		bytes[15 + (4 * i)] = (unsigned char)(singles.at(i) & 0x000000ff);
+	}
+	unsigned short offset = 12 + (4 * i);
+	for(i = 0; i < ranges.size(); i++)
+	{
+		bytes[offset + (4 * i)] = (unsigned char)((ranges.at(i) & 0xff000000) >> 24);
+		bytes[offset + 1 + (4 * i)] = (unsigned char)((ranges.at(i) & 0x00ff0000) >> 16);
+		bytes[offset + 2 + (4 * i)] = (unsigned char)((ranges.at(i) & 0x0000ff00) >> 8);
+		bytes[offset + 3 + (4 * i)] = (unsigned char)(ranges.at(i) & 0x000000ff);
+	}
+
+	Packet p(bytes);
+	p.replace_checksum();
+
+	delete ordered_shards;
+	delete bytes;
 	return p;
 }
 

@@ -1,7 +1,14 @@
 #ifndef __UTIL__H__
 #define __UTIL__H__
 
+#include <vector>
+
 void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_length);
 bool uchar_array_equal(unsigned char const * const a, unsigned char const * const b, unsigned int size);
+void ulong_array_sort(unsigned long * array, unsigned long const length);
+unsigned long ulong_array_max(unsigned long const * const array, unsigned long const length);
+unsigned long ulong_array_min(unsigned long const * const array, unsigned long const length);
+std::vector<unsigned long> ulong_array_singles(unsigned long const * const array, unsigned long const length);
+std::vector<unsigned long> ulong_array_ranges(unsigned long const * const array, unsigned long const length);
 
 #endif
