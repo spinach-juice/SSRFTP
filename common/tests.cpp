@@ -136,3 +136,22 @@ TEST_CASE("Packet Builders: Client Start")
 
 	CHECK(uchar_array_equal(p.bytestream(), valid_output, 64));
 }
+
+TEST_CASE("Packet Builders: File Shard")
+{
+	unsigned long shardnum = 0x617323;
+	unsigned short trans_id = 0x5a5a;
+	unsigned char filedata[1024];
+	filedata[0] = 0;
+	unsigned int i = 1;
+	for(; i < 1024; i++)
+		filedata[i] = filedata[i - 1] + 1;
+
+	unsigned char valid_output[1036] = {0x00, 0x01, 0x04, 0x0b, 0xff, 0xbb, 0x00, 0x61, 0x73, 0x23, 0x5a, 0x5a};
+	for(i = 0; i < 1024; i++)
+		valid_output[i + 12] = filedata[i];
+
+	Packet p = build_file_shard(shardnum, trans_id, filedata, 1024);
+
+	CHECK(uchar_array_equal(p.bytestream(), valid_output, 1036));
+}

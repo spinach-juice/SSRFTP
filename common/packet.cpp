@@ -124,10 +124,29 @@ Packet build_client_start(char const * const md5_chksum, unsigned long long cons
 	return p;
 }
 
-Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, char const * const shard_data, unsigned short const data_size)
+Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, unsigned char const * const shard_data, unsigned short const data_size)
 {
-	unsigned char placeholder[12] = {'0'};
-	Packet p(placeholder);
+	unsigned short packet_length = data_size + 11;
+	unsigned char* bytes = new unsigned char[packet_length];
+	bytes[0] = 0x00;
+	bytes[1] = 0x01;
+	bytes[2] = (unsigned char)(packet_length >> 8);
+	bytes[3] = (unsigned char)(packet_length & 0x00ff);
+	bytes[6] = (unsigned char)((shard_num & 0xff000000) >> 24);
+	bytes[7] = (unsigned char)((shard_num & 0x00ff0000) >> 16);
+	bytes[8] = (unsigned char)((shard_num & 0x0000ff00) >> 8);
+	bytes[9] = (unsigned char)(shard_num & 0x000000ff);
+	bytes[10] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[11] = (unsigned char)(trans_id & 0x00ff);
+
+	unsigned int i = 0;
+	for(; i < data_size; i++)
+		bytes[12 + i] = shard_data[i];
+
+	Packet p(bytes);
+	p.replace_checksum();
+
+	delete bytes;
 	return p;
 }
 
