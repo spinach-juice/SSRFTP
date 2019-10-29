@@ -1,10 +1,11 @@
 #include "packet.h"
+#include "util.h"
 
-Packet::Packet(char const * const bytestream)
+Packet::Packet(unsigned char const * const bytestream)
 {
 	this->data_size = ((unsigned short)bytestream[2] << 8) + (unsigned short)bytestream[3];
 
-	this->data = new char[(int)(this->data_size) + 1];
+	this->data = new unsigned char[(int)(this->data_size) + 1];
 
 	int i = 0;
 	for(; i - 1 < this->data_size; i++)
@@ -15,7 +16,7 @@ Packet::Packet(const Packet& p)
 {
 	this->data_size = p.data_size;
 
-	this->data = new char[(int)(this->data_size) + 1];
+	this->data = new unsigned char[(int)(this->data_size) + 1];
 
 	int i = 0;
 	for(; i - 1 < this->data_size; i++)
@@ -27,7 +28,7 @@ Packet::~Packet()
 	delete this->data;
 }
 
-char const * const Packet::bytestream()
+unsigned char const * const Packet::bytestream()
 {
 	return data;
 }
@@ -84,33 +85,70 @@ unsigned short Packet::calc_checksum()
 	return chksum;
 }
 
-Packet build_client_start(char* md5_chksum, unsigned long long file_size, unsigned long num_shards, unsigned short trans_id, char* destination_path, unsigned short path_length)
+void Packet::replace_checksum()
 {
-	Packet p("");
+	unsigned short chksum = this->calc_checksum();
+
+	this->data[4] = (unsigned char)(chksum >> 8);
+	this->data[5] = (unsigned char)(chksum & 0x00ff);
+}
+
+Packet build_client_start(char const * const md5_chksum, unsigned long long const file_size, unsigned long const num_shards, unsigned short const trans_id, char const * const destination_path, unsigned short const path_length)
+{
+	unsigned short packet_length = path_length + 32;
+	unsigned char* bytes = new unsigned char[packet_length];
+	bytes[0] = bytes[1] = 0x00;
+	bytes[2] = (unsigned char)(packet_length >> 8);
+	bytes[3] = (unsigned char)(packet_length & 0x00ff);
+	ascii2hex(md5_chksum, &bytes[6], 32);
+	bytes[22] = (unsigned char)((file_size & 0x000000ff00000000) >> 32);
+	bytes[23] = (unsigned char)((file_size & 0x00000000ff000000) >> 24);
+	bytes[24] = (unsigned char)((file_size & 0x0000000000ff0000) >> 16);
+	bytes[25] = (unsigned char)((file_size & 0x000000000000ff00) >> 8);
+	bytes[26] = (unsigned char)(file_size & 0x00000000000000ff);
+	bytes[27] = (unsigned char)((num_shards & 0xff000000) >> 24);
+	bytes[28] = (unsigned char)((num_shards & 0x00ff0000) >> 16);
+	bytes[29] = (unsigned char)((num_shards & 0x0000ff00) >> 8);
+	bytes[30] = (unsigned char)(num_shards & 0x000000ff);
+	bytes[31] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[32] = (unsigned char)(trans_id & 0x00ff);
+
+	unsigned short i = 0;
+	for(; i < path_length; i++)
+		bytes[33 + i] = (unsigned char)destination_path[i];
+
+	Packet p(bytes);
+	p.replace_checksum();
+
+	delete bytes;
 	return p;
 }
 
-Packet build_file_shard(unsigned long shard_num, unsigned short trans_id, char* shard_data, unsigned short data_size)
+Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, char const * const shard_data, unsigned short const data_size)
 {
-	Packet p("");
+	unsigned char placeholder[12] = {'0'};
+	Packet p(placeholder);
 	return p;
 }
 
-Packet build_shard_end(unsigned short trans_id)
+Packet build_shard_end(unsigned short const trans_id)
 {
-	Packet p("");
+	unsigned char placeholder[12] = {'0'};
+	Packet p(placeholder);
 	return p;
 }
 
-Packet build_shard_request(unsigned short trans_id, unsigned long* missing_shards, unsigned long num_missing_shards)
+Packet build_shard_request(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned long const num_missing_shards)
 {
-	Packet p("");
+	unsigned char placeholder[12] = {'0'};
+	Packet p(placeholder);
 	return p;
 }
 
-Packet build_transfer_complete(unsigned short trans_id, bool success_state)
+Packet build_transfer_complete(unsigned short const trans_id, bool const success_state)
 {
-	Packet p("");
+	unsigned char placeholder[12] = {'0'};
+	Packet p(placeholder);
 	return p;
 }
 

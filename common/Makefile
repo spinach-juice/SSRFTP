@@ -2,7 +2,7 @@ CCOMP=g++
 CFLAGS=-O3 -Wall -std=c++11
 LIBFLAGS=-lboost_system -pthread
 
-SOURCE=packet.cpp
+SOURCE=packet.cpp util.cpp
 TEST_SRC=tests.cpp
 
 OBJS=$(SOURCE:.cpp=.o)
