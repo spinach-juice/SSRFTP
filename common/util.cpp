@@ -27,7 +27,36 @@ void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_
 	}
 }
 
+void hex2ascii(unsigned char const * const hex, char* ascii, unsigned int hex_length)
+{
+	if(hex == nullptr || ascii == nullptr)
+		return;
+
+	unsigned int i = 0;
+	for(; i < hex_length; i++)
+	{
+		if((hex[i] & 0xf0) >> 4 < 0x0a)
+			ascii[i * 2] = ((hex[i] & 0xf0) >> 4) + '0';
+		else
+			ascii[i * 2] = ((hex[i] & 0xf0) >> 4) - 0x0a + 'a';
+
+		if((hex[i] & 0x0f) < 0x0a)
+			ascii[(i * 2) + 1] = (hex[i] & 0x0f) + '0';
+		else
+			ascii[(i * 2) + 1] = (hex[i] & 0x0f) - 0x0a + 'a';
+	}
+}
+
 bool uchar_array_equal(unsigned char const * const a, unsigned char const * const b, unsigned int size)
+{
+	unsigned int i = 0;
+	for(; i < size; i++)
+		if(a[i] != b[i])
+			return false;
+	return true;
+}
+
+bool schar_array_equal(char const * const a, char const * const b, unsigned int size)
 {
 	unsigned int i = 0;
 	for(; i < size; i++)

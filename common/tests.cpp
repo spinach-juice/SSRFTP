@@ -195,3 +195,30 @@ TEST_CASE("Packet Builders: Transfer Complete")
 
 	CHECK(uchar_array_equal(p.bytestream(), valid_output, 9));
 }
+
+TEST_CASE("Packet Interpreters: Client Start")
+{
+	char md5[32] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+	unsigned long long filesize = 0xab12cd34ef;
+	unsigned long num_shards = 0xab2adf;
+	unsigned short trans_id = 0x5a5a;
+	char dest_path[] = "/home/output/file/path/file.txt";
+	unsigned short path_length = 31;
+
+	Packet p = build_client_start(md5, filesize, num_shards, trans_id, dest_path, path_length);
+
+	char md5_out[32];
+	unsigned long long filesize_out;
+	unsigned long num_shards_out;
+	unsigned short trans_id_out;
+	char dest_path_out[260];
+	unsigned short path_length_out;
+
+	CHECK(interpret_client_start(p, md5_out, filesize_out, num_shards_out, trans_id_out, dest_path_out, path_length_out));
+	CHECK(schar_array_equal(md5, md5_out, 32));
+	CHECK(filesize_out == filesize);
+	CHECK(num_shards_out == num_shards);
+	CHECK(trans_id_out == trans_id);
+	CHECK(schar_array_equal(dest_path, dest_path_out, 31));
+	CHECK(path_length_out == path_length);
+}

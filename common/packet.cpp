@@ -226,27 +226,41 @@ Packet build_transfer_complete(unsigned short const trans_id, bool const success
 	return p;
 }
 
-bool interpret_client_start(Packet& p, char*& md5_chksum, unsigned long long& file_size, unsigned long& num_shards, unsigned short& trans_id, char*& destination_path, unsigned short& path_length)
+bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& file_size, unsigned long& num_shards, unsigned short& trans_id, char* destination_path, unsigned short& path_length)
 {
-	return false;
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[0] != 0x00 || p.size() < 32)
+		return false;
+
+	hex2ascii(&p.bytestream()[6], md5_chksum, 16);
+
+	file_size = ((unsigned long long)(p.bytestream()[22]) << 32) | ((unsigned long long)(p.bytestream()[23]) << 24) | ((unsigned long long)(p.bytestream()[24]) << 16) | ((unsigned long long)(p.bytestream()[25]) << 8) | (unsigned long long)(p.bytestream()[26]);
+	num_shards = ((unsigned long)(p.bytestream()[27]) << 24) | ((unsigned long)(p.bytestream()[28]) << 16) | ((unsigned long)(p.bytestream()[29]) << 8) | (unsigned long)(p.bytestream()[30]);
+	trans_id = ((unsigned short)(p.bytestream()[31]) << 8) | (unsigned short)(p.bytestream()[32]);
+
+	unsigned short i = 33;
+	for(; i < p.size(); i++)
+		destination_path[i - 33] = (char)(p.bytestream()[i]);
+	path_length = i - 33;
+
+	return p.verify_checksum();
 }
 
-bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, char*& shard_data, unsigned short& data_size)
+bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, char* shard_data, unsigned short& data_size)
 {
-	return false;
+	return p.verify_checksum();
 }
 
 bool interpret_shard_end(Packet& p, unsigned short& trans_id)
 {
-	return false;
+	return p.verify_checksum();
 }
 
-bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long*& missing_shards, unsigned long& num_missing_shards)
+bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long* missing_shards, unsigned long& num_missing_shards)
 {
-	return false;
+	return p.verify_checksum();
 }
 
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state)
 {
-	return false;
+	return p.verify_checksum();
 }
