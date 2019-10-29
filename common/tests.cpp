@@ -183,3 +183,15 @@ TEST_CASE("Packet Builders: Shard Request")
 
 	CHECK(uchar_array_equal(p.bytestream(), valid_output, 56));
 }
+
+TEST_CASE("Packet Builders: Transfer Complete")
+{
+	unsigned short trans_id = 0x5a5a;
+	bool success = true;
+
+	unsigned char valid_output[] = {0x00, 0x04, 0x00, 0x08, 0x01, 0x40, 0x5a, 0x5a, 0x80};
+
+	Packet p = build_transfer_complete(trans_id, success);
+
+	CHECK(uchar_array_equal(p.bytestream(), valid_output, 9));
+}

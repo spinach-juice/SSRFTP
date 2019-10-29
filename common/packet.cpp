@@ -212,8 +212,17 @@ Packet build_shard_request(unsigned short const trans_id, unsigned long const * 
 
 Packet build_transfer_complete(unsigned short const trans_id, bool const success_state)
 {
-	unsigned char placeholder[12] = {'0'};
-	Packet p(placeholder);
+	unsigned char bytes[9] = {0x00, 0x04, 0x00, 0x08};
+	bytes[6] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[7] = (unsigned char)(trans_id & 0x00ff);
+	if(success_state)
+		bytes[8] = 0x80;
+	else
+		bytes[8] = 0x00;
+
+	Packet p(bytes);
+	p.replace_checksum();
+
 	return p;
 }
 
