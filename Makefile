@@ -1,13 +1,16 @@
 all: client server
 
-.PHONY: client server clean
+.PHONY: common client server clean
 
-client:
-	cd client && make
+common:
+	cd common && $(MAKE)
 
-server:
-	cd server && make
+client: common
+	cd client && $(MAKE)
+
+server: common
+	cd server && $(MAKE)
 
 clean:
-	cd client && make clean
-	cd server && make clean
+	cd client && $(MAKE) clean
+	cd server && $(MAKE) clean
