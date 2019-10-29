@@ -152,8 +152,13 @@ Packet build_file_shard(unsigned long const shard_num, unsigned short const tran
 
 Packet build_shard_end(unsigned short const trans_id)
 {
-	unsigned char placeholder[12] = {'0'};
-	Packet p(placeholder);
+	unsigned char bytes[8] = {0x00, 0x02, 0x00, 0x07};
+	bytes[6] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[7] = (unsigned char)(trans_id & 0x00ff);
+
+	Packet p(bytes);
+	p.replace_checksum();
+
 	return p;
 }
 

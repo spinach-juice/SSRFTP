@@ -155,3 +155,13 @@ TEST_CASE("Packet Builders: File Shard")
 
 	CHECK(uchar_array_equal(p.bytestream(), valid_output, 1036));
 }
+
+TEST_CASE("Packet Builders: Shard End")
+{
+	unsigned short trans_id = 0x5a5a;
+	unsigned char valid_output[8] = {0x00, 0x02, 0x00, 0x07, 0x00, 0xbd, 0x5a, 0x5a};
+
+	Packet p = build_shard_end(trans_id);
+
+	CHECK(uchar_array_equal(p.bytestream(), valid_output, 8));
+}
