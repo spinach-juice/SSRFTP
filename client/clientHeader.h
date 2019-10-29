@@ -23,14 +23,13 @@ class tcpListener
 			boost::asio::io_service io_service;
 			tcp:: acceptor acceptor(io_service,tcp::endpoint(tcp::v4(),49125));
 		
-		while(filepath.empty())
-		{
-			tcp::socket socket(io_service);
-			acceptor.accept(socket) ;
-			boost :: system::error_code ignored_error;
-			boost::asio::read(socket, boost::asio::buffer(filepath), ignored_error);
-
-		}
+			while(filepath.empty())
+			{
+				tcp::socket socket(io_service);
+				acceptor.accept(socket) ;
+				boost :: system::error_code ignored_error;
+				boost::asio::read(socket, boost::asio::buffer(filepath), ignored_error);
+			}
 
 		}
 		catch(std::exception& e)
@@ -42,26 +41,24 @@ class tcpListener
 	}
 
 	//assuming that the filepath exists on the computer
-	void getPath()
+	std::ifstream* getPath()
 	{
-		std::ifstream ifile;
-		ifile.open(filepath);
+		std::ifstream* ifile;
+		ifile->open(filepath);
 				
 		
 
-		if(!ifile)
+		if(!*ifile)
 		{
-			//file does not exist, output error message
+			std::cout << ("File " + filepath + " does not exist");
+			return NULL;
 		}
 		else
 		{
-			
+			return ifile;
 		}
-
 	}
 	
-
-
 
 };
 

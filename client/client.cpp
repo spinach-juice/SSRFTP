@@ -13,6 +13,12 @@ using boost::asio::ip::tcp;
 int main(int argc, char** argv)
 {
 
+	ifstream file	
+
+	tcpListener temp;
+	temp.Listen();
+	
+
 
 
 
