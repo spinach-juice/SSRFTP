@@ -1,6 +1,6 @@
 CCOMP=g++
 CFLAGS=-O3 -Wall
-LIBFLAGS=-lboost_system -pthread
+LIBFLAGS=-lboost_system -pthread 
 
 EXECUTABLE=SSRFTP_server
 
@@ -13,7 +13,8 @@ OBJS=$(SOURCE:.cpp=.o)
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJS)
-	$(CCOMP) $(CFLAGS) -o $(EXECUTABLE) $(OBJS) $(LIBFLAGS)
+	$(CCOMP) $(CFLAGS) -o
+	 $(EXECUTABLE) $(OBJS) $(LIBFLAGS)
 
 .cpp.o:
 	$(CCOMP) $(CFLAGS) -c -o $@ $< $(LIBFLAGS)
