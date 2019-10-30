@@ -245,8 +245,18 @@ bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& fil
 	return p.verify_checksum();
 }
 
-bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, char* shard_data, unsigned short& data_size)
+bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, unsigned char* shard_data, unsigned short& data_size)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x01 || p.size() < 12)
+		return false;
+
+	shard_num = (((unsigned long)(p.bytestream()[6])) << 24) | (((unsigned long)(p.bytestream()[7])) << 16) | (((unsigned long)(p.bytestream()[8])) << 8) | ((unsigned long)(p.bytestream()[9]));
+	trans_id = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+	data_size = p.size() - 12;
+	unsigned short i = 12;
+	for(; i < p.size(); i++)
+		shard_data[i - 12] = p.bytestream()[i];
+
 	return p.verify_checksum();
 }
 

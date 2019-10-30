@@ -222,3 +222,27 @@ TEST_CASE("Packet Interpreters: Client Start")
 	CHECK(schar_array_equal(dest_path, dest_path_out, 31));
 	CHECK(path_length_out == path_length);
 }
+
+TEST_CASE("Packet Interpreters: File Shard")
+{
+	unsigned long shardnum = 0x617323;
+	unsigned short trans_id = 0x5a5a;
+	unsigned char filedata[1024];
+	filedata[0] = 0;
+	unsigned int i = 1;
+	for(; i < 1024; i++)
+		filedata[i] = filedata[i - 1] + 1;
+
+	Packet p = build_file_shard(shardnum, trans_id, filedata, 1024);
+
+	unsigned long shard_out;
+	unsigned short trans_id_out;
+	unsigned char filedata_out[1024];
+	unsigned short size_out;
+
+	CHECK(interpret_file_shard(p, shard_out, trans_id_out, filedata_out, size_out));
+	CHECK(shardnum == shard_out);
+	CHECK(trans_id == trans_id_out);
+	CHECK(uchar_array_equal(filedata, filedata_out, 1024));
+	CHECK(size_out == 1024);
+}
