@@ -1,6 +1,5 @@
 #include "packet.h"
 #include "util.h"
-#include <vector>
 
 Packet::Packet(unsigned char const * const bytestream)
 {
@@ -262,6 +261,11 @@ bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& t
 
 bool interpret_shard_end(Packet& p, unsigned short& trans_id)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x02 || p.size() != 8)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+
 	return p.verify_checksum();
 }
 

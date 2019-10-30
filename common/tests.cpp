@@ -246,3 +246,15 @@ TEST_CASE("Packet Interpreters: File Shard")
 	CHECK(uchar_array_equal(filedata, filedata_out, 1024));
 	CHECK(size_out == 1024);
 }
+
+TEST_CASE("Packet Interpreters: Shard End")
+{
+	unsigned short trans_id = 0x5a5a;
+
+	Packet p = build_shard_end(trans_id);
+
+	unsigned short trans_id_out;
+
+	CHECK(interpret_shard_end(p, trans_id_out));
+	CHECK(trans_id == trans_id_out);
+}
