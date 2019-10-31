@@ -65,6 +65,16 @@ bool schar_array_equal(char const * const a, char const * const b, unsigned int 
 	return true;
 }
 
+bool ulong_array_equal(unsigned long const * const a, unsigned long const * const b, unsigned int size)
+{
+	unsigned int i = 0;
+	for(; i < size; i++)
+		if(a[i] != b[i])
+			return false;
+	return true;
+}
+
+
 void ulong_array_sort(unsigned long * array, unsigned long const length)
 {
 	unsigned long min = ulong_array_min(array, length);

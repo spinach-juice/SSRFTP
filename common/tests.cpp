@@ -258,3 +258,28 @@ TEST_CASE("Packet Interpreters: Shard End")
 	CHECK(interpret_shard_end(p, trans_id_out));
 	CHECK(trans_id == trans_id_out);
 }
+
+TEST_CASE("Packet Interpreters: Shard Request")
+{
+	unsigned long missing_nums[100] = {0x0000, 0x0003, 0x4158, 0x1122, 0x5673, 0xaaaa, 0xf437, 0x0005, 0x0010, 0x0020};
+
+	int i = 10;
+	for(; i < 100; i++)
+		missing_nums[i] = missing_nums[i - 1] + 1;
+
+	unsigned long num_miss = 100;
+	unsigned short trans_id = 0x5a5a;
+
+	Packet p = build_shard_request(trans_id, missing_nums, num_miss);
+
+	unsigned short trans_id_out;
+	unsigned long missing_nums_out[100];
+	unsigned long num_miss_out;
+
+	ulong_array_sort(missing_nums, 100);
+
+	CHECK(interpret_shard_request(p, trans_id_out, missing_nums_out, num_miss_out));
+	CHECK(trans_id == trans_id_out);
+	CHECK(ulong_array_equal(missing_nums, missing_nums_out, num_miss));
+	CHECK(num_miss == num_miss_out);
+}
