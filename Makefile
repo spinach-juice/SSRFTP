@@ -14,3 +14,4 @@ server: common
 clean:
 	cd client && $(MAKE) clean
 	cd server && $(MAKE) clean
+	cd common && $(MAKE) clean
