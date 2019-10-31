@@ -66,6 +66,7 @@ TEST_CASE("Packet Class: Packet Type accessor - type 0x0000")
 	Packet p(bytestream);
 
 	CHECK(p.type() == (std::string)"Client Start Packet");
+	CHECK(p.int_type() == 0);
 }
 
 TEST_CASE("Packet Class: Packet Type accessor - type 0x0001")
@@ -79,6 +80,7 @@ TEST_CASE("Packet Class: Packet Type accessor - type 0x0001")
 	Packet p(bytestream);
 
 	CHECK(p.type() == (std::string)"File Shard Packet");
+	CHECK(p.int_type() == 1);
 }
 
 TEST_CASE("Packet Class: Packet Type accessor - type 0x0002")
@@ -92,6 +94,7 @@ TEST_CASE("Packet Class: Packet Type accessor - type 0x0002")
 	Packet p(bytestream);
 
 	CHECK(p.type() == (std::string)"Shard End Packet");
+	CHECK(p.int_type() == 2);
 }
 
 TEST_CASE("Packet Class: Packet Type accessor - type 0x0003")
@@ -105,6 +108,7 @@ TEST_CASE("Packet Class: Packet Type accessor - type 0x0003")
 	Packet p(bytestream);
 
 	CHECK(p.type() == (std::string)"Shard Request Packet");
+	CHECK(p.int_type() == 3);
 }
 
 TEST_CASE("Packet Class: Packet Type accessor - type 0x0004")
@@ -118,6 +122,7 @@ TEST_CASE("Packet Class: Packet Type accessor - type 0x0004")
 	Packet p(bytestream);
 
 	CHECK(p.type() == (std::string)"Transfer Complete Packet");
+	CHECK(p.int_type() == 4);
 }
 
 TEST_CASE("Packet Builders: Client Start")

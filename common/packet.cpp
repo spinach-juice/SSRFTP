@@ -68,6 +68,11 @@ std::string Packet::type()
 	return (std::string)"Invalid Packet ID Number";
 }
 
+unsigned short Packet::int_type()
+{
+	return ((unsigned short)this->data[0] << 8) + (unsigned short)this->data[1];
+}
+
 unsigned int Packet::size()
 {
 	return (unsigned int)(this->data_size) + 1;
