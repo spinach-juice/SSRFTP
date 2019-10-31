@@ -3,24 +3,76 @@
 #include <boost/asio.hpp>
 #include<fstream>
 #include<string>
+#include "packet.h"
+#include <queue>
 #include "clientHeader.h"
+#include "util.cpp"
 
-//system(md5sum filename)
-//16 bytes 
 
-using boost::asio::ip::tcp;
+unsigned long const shardsPerFile = 1024;
+std::queue<Packet> send_packet_queue;
+std::queue<Packet> receive_packet_queue;
+
 
 int main(int argc, char** argv)
 {
+	
+	
+	std::ifstream file;	
+	unsigned long long fileSize;
+	unsigned long shard_num;
+	pthread_t send_loop;
+	pthread_t receive_loop;
+	pthread_t state_loop;
+	
+	tcpListener full_file;
+	full_file.Listen();
+	file = *full_file.getPath();
+	fileSize = getFileSize(file);
+	
+	shard_num = fileSize/shardsPerFile`;
+	
+	if(fileSize % shardsPerfile != 0)
+		shard_num++;
 
-	ifstream file	
 
-	tcpListener temp;
-	temp.Listen();
+	char file_checksum[] = md5(file);
+
+
+	Packet start_packet = build_client_start(file_checksum,filesize,shard_num,trans_id,destination_path,path_length); 
+
 	
 
+	send_packet_queue.push(start_packet);
 
+	pthread_create(&send_loop,NULL,send,NULL);
+	pthread_create(&receive_loop,NULL,recieve,NULL);
 
+	
+	
 
+	
+	
   return 0;
 }
+
+
+void send()
+{
+	if(send_packet_queue.size != 0)
+	{
+		//send the file using udp
+
+	}	
+
+}
+void receive()
+{
+
+
+
+
+}
+
+
+

@@ -1,4 +1,9 @@
 #include "util.h"
+#include <openssl/md5.h>
+#include <fstream>
+
+
+using boost::uuids::detail::md5;
 
 void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_length)
 {
@@ -35,3 +40,23 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 			return false;
 	return true;
 }
+
+char[] MD5(const md5::digest_type &digest) 
+{
+    char[] result;
+    const auto charDigest = reinterpret_cast<const char *>(&digest);
+    boost::algorithm::hex(charDigest, charDigest + sizeof(md5::digest_type), std::back_inserter(result));
+    return result;
+}
+
+unsigned long long getFileSize(std::ifstream file)
+{
+	unsigned long long fileSize;
+
+	file.seekg(0,file.end);
+	fileSize = file.tellg();
+	return fileSize;
+}
+
+
+

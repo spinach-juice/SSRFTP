@@ -1,10 +1,22 @@
+#ifndef CLIENT_HEADER
+#define CLIENT_HEADER_H
+
+
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <fstream>
 #include <string>
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <unistd.h>  
+#include <pthread.h> 
 
 using boost::asio::ip::tcp;
+using boost::asio::ip::udp;
+
+void send();
+void receive();
 
 //listens for a file provided by user from previous setup
 class tcpListener
@@ -44,7 +56,7 @@ class tcpListener
 	std::ifstream* getPath()
 	{
 		std::ifstream* ifile;
-		ifile->open(filepath);
+		ifile->open(filepath, std::ios::binary);
 				
 		
 
@@ -64,3 +76,6 @@ class tcpListener
 
 
 
+
+
+#endif
