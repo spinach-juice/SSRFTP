@@ -23,4 +23,4 @@ $(EXECUTABLE): $(OBJS)
 	$(CCOMP) $(CFLAGS) $(INCFLAGS) -c -o $@ $< $(LIBFLAGS)
 
 clean:
-	rm $(OBJS) $(EXECUTABLE)
+	rm -f $(OBJS) $(EXECUTABLE)
