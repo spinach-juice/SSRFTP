@@ -283,3 +283,18 @@ TEST_CASE("Packet Interpreters: Shard Request")
 	CHECK(ulong_array_equal(missing_nums, missing_nums_out, num_miss));
 	CHECK(num_miss == num_miss_out);
 }
+
+TEST_CASE("Packet Interpreters: Transfer Complete")
+{
+	unsigned short trans_id = 0x5a5a;
+	bool success = true;
+
+	Packet p = build_transfer_complete(trans_id, success);
+
+	unsigned short trans_id_out;
+	bool success_out = false;
+
+	CHECK(interpret_transfer_complete(p, trans_id_out, success_out));
+	CHECK(trans_id == trans_id_out);
+	CHECK(success_out == success);
+}

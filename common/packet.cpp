@@ -302,5 +302,14 @@ bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long*
 
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x04 || p.size() != 9)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+	if(p.bytestream()[8] & 0x80)
+		success_state = true;
+	else
+		success_state = false;
+
 	return p.verify_checksum();
 }
