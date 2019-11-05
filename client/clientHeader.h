@@ -18,6 +18,9 @@ using boost::asio::ip::udp;
 void send();
 void receive();
 
+char * MD5(std::ifstream stream);
+
+
 //listens for a file provided by user from previous setup
 class tcpListener
 {
@@ -25,7 +28,8 @@ class tcpListener
 	std::string filepath;
 
 	public:
-	
+	tcpListener();
+	~tcpListener();
 
 	void Listen()
 	{
@@ -58,8 +62,6 @@ class tcpListener
 		std::ifstream* ifile;
 		ifile->open(filepath, std::ios::binary);
 				
-		
-
 		if(!*ifile)
 		{
 			std::cout << ("File " + filepath + " does not exist");
@@ -73,7 +75,6 @@ class tcpListener
 	
 
 };
-
 
 
 
