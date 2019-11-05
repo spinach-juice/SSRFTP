@@ -48,8 +48,8 @@ int main(int argc, char** argv)
 
 	send_packet_queue.push(start_packet);
 
-	pthread_create(&send_loop,NULL,send,NULL);
-	pthread_create(&receive_loop,NULL,receive,NULL);
+	//pthread_create(&send_loop,NULL,send,NULL);
+	//pthread_create(&receive_loop,NULL,receive,NULL);
 
 	
 	
