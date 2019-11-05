@@ -6,7 +6,7 @@
 #include "packet.h"
 #include <queue>
 #include "clientHeader.h"
-#include "util.cpp"
+#include "util.h"
 
 
 unsigned long const shardsPerFile = 1024;
@@ -28,10 +28,10 @@ int main(int argc, char** argv)
 	pthread_t receive_loop;
 	pthread_t state_loop;
 	
-	tcpListener full_file;
-	full_file.Listen();
-	file = full_file.getPath();
-	fileSize = getFileSize(file);
+//	tcpListener full_file;
+//	full_file.Listen();
+//	file = full_file.getPath();
+//	fileSize = getFileSize(file);
 	
 	shard_num = fileSize/shardsPerFile;
 	
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 		shard_num++;
 
 
-	char file_checksum[33] = {*MD5(file)};
+	char file_checksum[33] = {*MD5(file)}; //this will NOT work by the way
 
 
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 

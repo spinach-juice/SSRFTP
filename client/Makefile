@@ -10,7 +10,7 @@ EXECUTABLE=SSRFTP_client
 
 SOURCE=client.cpp
 
-OBJS=$(SOURCE:.cpp=.o)
+OBJS=$(SOURCE:.cpp=.o) ../common/packet.o ../common/util.o
 
 .PHONY: clean
 

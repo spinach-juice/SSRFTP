@@ -2,7 +2,9 @@
 #define __UTIL__H__
 
 #include <vector>
+#include <fstream>
 
+char* MD5(std::ifstream* stream);
 void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_length);
 void hex2ascii(unsigned char const * const hex, char* ascii, unsigned int hex_length);
 bool uchar_array_equal(unsigned char const * const a, unsigned char const * const b, unsigned int size);
