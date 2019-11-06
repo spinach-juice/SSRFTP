@@ -1,6 +1,5 @@
 #include "packet.h"
 #include "util.h"
-#include <vector>
 
 Packet::Packet(unsigned char const * const bytestream)
 {
@@ -67,6 +66,11 @@ std::string Packet::type()
 	}
 
 	return (std::string)"Invalid Packet ID Number";
+}
+
+unsigned short Packet::int_type()
+{
+	return ((unsigned short)this->data[0] << 8) + (unsigned short)this->data[1];
 }
 
 unsigned int Packet::size()
@@ -245,22 +249,72 @@ bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& fil
 	return p.verify_checksum();
 }
 
-bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, char* shard_data, unsigned short& data_size)
+bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, unsigned char* shard_data, unsigned short& data_size)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x01 || p.size() < 12)
+		return false;
+
+	shard_num = (((unsigned long)(p.bytestream()[6])) << 24) | (((unsigned long)(p.bytestream()[7])) << 16) | (((unsigned long)(p.bytestream()[8])) << 8) | ((unsigned long)(p.bytestream()[9]));
+	trans_id = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+	data_size = p.size() - 12;
+	unsigned short i = 12;
+	for(; i < p.size(); i++)
+		shard_data[i - 12] = p.bytestream()[i];
+
 	return p.verify_checksum();
 }
 
 bool interpret_shard_end(Packet& p, unsigned short& trans_id)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x02 || p.size() != 8)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+
 	return p.verify_checksum();
 }
 
 bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long* missing_shards, unsigned long& num_missing_shards)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x03 || p.size() < 10)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+	unsigned short num_singles = (((unsigned short)(p.bytestream()[8])) << 8) | ((unsigned short)(p.bytestream()[9]));
+	unsigned short num_ranges = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+
+	unsigned long i = 12;
+	num_missing_shards = 0;
+	for(; num_missing_shards < num_singles; num_missing_shards++, i+=4)
+	{
+		missing_shards[num_missing_shards] = (((unsigned long)(p.bytestream()[i])) << 24) | (((unsigned long)(p.bytestream()[i+1])) << 16) | (((unsigned long)(p.bytestream()[i+2])) << 8) | ((unsigned long)(p.bytestream()[i+3]));
+	}
+
+	unsigned short j = 0;
+	for(; j < num_ranges; j++, i+=8)
+	{
+		unsigned long range_start = (((unsigned long)(p.bytestream()[i])) << 24) | (((unsigned long)(p.bytestream()[i+1])) << 16) | (((unsigned long)(p.bytestream()[i+2])) << 8) | ((unsigned long)(p.bytestream()[i+3]));
+		unsigned long range_end = (((unsigned long)(p.bytestream()[i+4])) << 24) | (((unsigned long)(p.bytestream()[i+5])) << 16) | (((unsigned long)(p.bytestream()[i+6])) << 8) | ((unsigned long)(p.bytestream()[i+7]));
+		unsigned long k = range_start;
+		for(; k <= range_end; k++, num_missing_shards++)
+			missing_shards[num_missing_shards] = k;
+	}
+
+	ulong_array_sort(missing_shards, num_missing_shards);
+
 	return p.verify_checksum();
 }
 
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state)
 {
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x04 || p.size() != 9)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+	if(p.bytestream()[8] & 0x80)
+		success_state = true;
+	else
+		success_state = false;
+
 	return p.verify_checksum();
 }

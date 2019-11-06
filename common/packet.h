@@ -14,6 +14,7 @@ public:
 	unsigned char const * const bytestream();
 	bool verify_checksum();
 	std::string type();
+	unsigned short int_type();
 	unsigned int size();
 	void replace_checksum();
 
@@ -35,7 +36,7 @@ Packet build_transfer_complete(unsigned short const trans_id, bool const success
 
 
 bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& file_size, unsigned long& num_shards, unsigned short& trans_id, char* destination_path, unsigned short& path_length);
-bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, char* shard_data, unsigned short& data_size);
+bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, unsigned char* shard_data, unsigned short& data_size);
 bool interpret_shard_end(Packet& p, unsigned short& trans_id);
 bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long* missing_shards, unsigned long& num_missing_shards);
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state);
