@@ -1,52 +1,67 @@
 #include "tcp_listener.h"
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+#include <iostream>
+#include <unistd.h>
 
-class tcpListener
+using boost::asio::ip::tcp;
+
+// Constructor
+tcpListener::tcpListener()
 {
-	private:
-	std::string filepath;
 
-	public:
-	tcpListener();
-	~tcpListener();
+}
 
-	void Listen()
+// Destructor
+tcpListener::~tcpListener()
+{
+
+}
+
+void tcpListener::Listen()
+{
+
+	char file_cstr[300] = {0};
+
+	try 
 	{
-		
-		try 
-		{
-			boost::asio::io_service io_service;
-			tcp:: acceptor acceptor(io_service,tcp::endpoint(tcp::v4(),49125));
-		
-			while(filepath.empty())
-			{
-				tcp::socket socket(io_service);
-				acceptor.accept(socket) ;
-				boost :: system::error_code ignored_error;
-				boost::asio::read(socket, boost::asio::buffer(filepath), ignored_error);
-			}
+		boost::asio::io_service io_service;
+		tcp::acceptor acceptor(io_service,tcp::endpoint(tcp::v4(),TCP_LISTEN_PORT));
 
-		}
-		catch(std::exception& e)
+		while(filepath.empty())
 		{
-			std::cout << e.what() << std::endl;
-			return;
+			tcp::socket socket(io_service);
+			acceptor.accept(socket);
+			boost::system::error_code ignored_error;
+			boost::asio::read(socket, boost::asio::buffer(file_cstr, 300), ignored_error);
 		}
-		
+
+	}
+	catch(std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
+		return;
 	}
 
-	//assuming that the filepath exists on the computer
-	std::ifstream* getPath()
+}
+
+//assuming that the filepath exists on the computer
+//
+//You probably don't want to return a pointer here, do a return by reference instead
+//std::ifstream& tcpListener::getPath()
+std::ifstream* tcpListener::getPath()
+{
+	std::ifstream* ifile;//This pointer is used uninitialized, will segfault and crash
+			     // Fixable by just making an object instead of a pointer
+	ifile->open(this->filepath.c_str(), std::ios::binary);
+
+	if(!*ifile)
 	{
-		std::ifstream* ifile;
-		ifile->open(filepath, std::ios::binary);
-				
-		if(!*ifile)
-		{
-			std::cout << ("File " + filepath + " does not exist");
-			return NULL;
-		}
-		else
-		{
-			return ifile;
-		}
+		std::cout << ("File " + this->filepath + " does not exist");
+		return NULL;
 	}
+	else
+	{
+		return ifile;
+	}
+}

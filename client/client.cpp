@@ -1,13 +1,14 @@
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
-#include<fstream>
-#include<string>
-#include "packet.h"
+#include <fstream>
+#include <string>
 #include <queue>
-#include "clientHeader.h"
-#include "util.h"
 
+#include "packet.h"
+#include "client.h"
+#include "util.h"
+#include "tcp_listener.h"
 
 unsigned long const shardsPerFile = 1024;
 std::queue<Packet> send_packet_queue;
@@ -28,10 +29,10 @@ int main(int argc, char** argv)
 	pthread_t receive_loop;
 	pthread_t state_loop;
 	
-//	tcpListener full_file;
-//	full_file.Listen();
-//	file = full_file.getPath();
-//	fileSize = getFileSize(file);
+	tcpListener full_file;
+	full_file.Listen();
+	file = full_file.getPath();
+	fileSize = getFileSize(file);
 	
 	shard_num = fileSize/shardsPerFile;
 	

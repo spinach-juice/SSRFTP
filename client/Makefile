@@ -8,7 +8,7 @@ INCFLAGS=-I$(COMMON_DIR)
 
 EXECUTABLE=SSRFTP_client
 
-SOURCE=client.cpp
+SOURCE=client.cpp tcp_listener.cpp
 
 OBJS=$(SOURCE:.cpp=.o) ../common/packet.o ../common/util.o
 
@@ -23,4 +23,4 @@ $(EXECUTABLE): $(OBJS)
 	$(CCOMP) $(CFLAGS) $(INCFLAGS) -c -o $@ $< $(LIBFLAGS)
 
 clean:
-	rm $(OBJS) $(EXECUTABLE)
+	rm -f $(OBJS) $(EXECUTABLE)
