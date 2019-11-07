@@ -15,8 +15,8 @@
 using boost::asio::ip::tcp;
 using boost::asio::ip::udp;
 
-void send();
-void receive();
+void *send();
+void *receive();
 
 char * MD5(std::ifstream stream);
 
