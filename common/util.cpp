@@ -1,4 +1,12 @@
 #include "util.h"
+#include <openssl/md5.h>
+#include <iostream>
+#include <fstream>
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+
+
+
 
 void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_length)
 {
@@ -54,6 +62,34 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 		if(a[i] != b[i])
 			return false;
 	return true;
+}
+
+char* MD5(std::ifstream* stream)
+{ 
+
+    unsigned char digest[16];
+    MD5_CTX ctx;
+
+    MD5_Init(&ctx);
+    
+    MD5_Update(&ctx,stream,stream->tellg());
+    MD5_Final(digest, &ctx);
+
+    char mdString[33];
+    for (int i = 0; i < 16; i++)
+        sprintf(&mdString[i*2], "%02x", (unsigned int)digest[i]);
+
+    return mdString;
+    
+}
+
+unsigned long long getFileSize(std::ifstream* file)
+{
+	unsigned long long fileSize;
+
+	file->seekg(0,file->end);
+	fileSize = file->tellg();
+	return fileSize;
 }
 
 bool schar_array_equal(char const * const a, char const * const b, unsigned int size)
