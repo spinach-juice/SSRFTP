@@ -46,12 +46,10 @@ void tcpListener::Listen()
 }
 
 //assuming that the filepath exists on the computer
-//
-//You probably don't want to return a pointer here, do a return by reference instead
-//std::ifstream& tcpListener::getPath()
-std::ifstream* tcpListener::getPath()
+
+std::ifstream& tcpListener::getPath()
 {
-	std::ifstream* ifile;//This pointer is used uninitialized, will segfault and crash
+	std::ifstream ifile;//This pointer is used uninitialized, will segfault and crash
 			     // Fixable by just making an object instead of a pointer
 	ifile->open(this->filepath.c_str(), std::ios::binary);
 
