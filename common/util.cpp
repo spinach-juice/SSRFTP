@@ -66,6 +66,8 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 
 char* MD5(std::ifstream* stream)
 { 
+return 0;}
+/*
 
     unsigned char digest[16];
     MD5_CTX ctx;
@@ -82,7 +84,7 @@ char* MD5(std::ifstream* stream)
     return mdString;
     
 }
-
+*/
 unsigned long long getFileSize(std::ifstream* file)
 {
 	unsigned long long fileSize;

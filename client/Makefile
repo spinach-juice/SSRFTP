@@ -10,9 +10,9 @@ INCFLAGS=-I$(COMMON_DIR)
 
 EXECUTABLE=SSRFTP_client
 
-SOURCE=client.cpp
+SOURCE=client.cpp tcp_listener.cpp
 
-OBJS=$(SOURCE:.cpp=.o)
+OBJS=$(SOURCE:.cpp=.o) ../common/packet.o ../common/util.o
 
 CMNDEP=$(COMMON_DIR)/lib$(COMMONLIB).so
 

@@ -1,13 +1,14 @@
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
-#include<fstream>
-#include<string>
-#include "packet.h"
+#include <fstream>
+#include <string>
 #include <queue>
-#include "clientHeader.h"
-#include "util.cpp"
 
+#include "packet.h"
+#include "client.h"
+#include "util.h"
+#include "tcp_listener.h"
 
 unsigned long const shardsPerFile = 1024;
 std::queue<Packet> send_packet_queue;
@@ -39,7 +40,7 @@ int main(int argc, char** argv)
 		shard_num++;
 
 
-	char file_checksum[33] = {*MD5(file)};
+	char file_checksum[33] = {*MD5(file)}; //this will NOT work by the way
 
 
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
@@ -48,8 +49,8 @@ int main(int argc, char** argv)
 
 	send_packet_queue.push(start_packet);
 
-	pthread_create(&send_loop,NULL,send,NULL);
-	pthread_create(&receive_loop,NULL,receive,NULL);
+	pthread_create(&send_loop,NULL,send,nullptr);
+	pthread_create(&receive_loop,NULL,receive,nullptr);
 
 	
 	
