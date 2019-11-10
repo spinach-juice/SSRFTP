@@ -1,7 +1,4 @@
-#ifndef __CLIENT__H__
-#define __CLIENT__H__
 
-void send();
-void receive();
 
-#endif
+void* send(void* args);
+void* receive(void* args);

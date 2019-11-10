@@ -49,14 +49,14 @@ void tcpListener::Listen()
 
 std::ifstream& tcpListener::getPath()
 {
-	std::ifstream ifile;//This pointer is used uninitialized, will segfault and crash
-			     // Fixable by just making an object instead of a pointer
-	ifile->open(this->filepath.c_str(), std::ios::binary);
+	std::ifstream ifile;
 
-	if(!*ifile)
+	ifile.open(this->filepath.c_str(), std::ios::binary);
+
+	if(!ifile)
 	{
 		std::cout << ("File " + this->filepath + " does not exist");
-		return NULL;
+		return ifile;
 	}
 	else
 	{

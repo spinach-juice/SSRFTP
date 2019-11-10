@@ -18,7 +18,7 @@ class tcpListener
 
 	void Listen();
 	//assuming that the filepath exists on the computer
-	std::ifstream* getPath();
+	std::ifstream& getPath();
 };
 
 #endif

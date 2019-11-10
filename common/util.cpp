@@ -64,11 +64,8 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 	return true;
 }
 
-char* MD5(std::ifstream* stream)
+void MD5(std::ifstream* stream, char* file_checksum)
 { 
-return 0;}
-/*
-
     unsigned char digest[16];
     MD5_CTX ctx;
 
@@ -77,14 +74,12 @@ return 0;}
     MD5_Update(&ctx,stream,stream->tellg());
     MD5_Final(digest, &ctx);
 
-    char mdString[33];
-    for (int i = 0; i < 16; i++)
-        sprintf(&mdString[i*2], "%02x", (unsigned int)digest[i]);
-
-    return mdString;
     
+    for (int i = 0; i < 16; i++)
+        sprintf(&file_checksum[i*2], "%02x", (unsigned int)digest[i]);
+	
 }
-*/
+
 unsigned long long getFileSize(std::ifstream* file)
 {
 	unsigned long long fileSize;
