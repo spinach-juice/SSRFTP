@@ -5,20 +5,46 @@
 #include <iostream>
 #include <unistd.h>
 
-static void* shared_memory[3];
+static void* shared_memory[4];
 
-void* communicator_main_loop(void* args)
+void* reciever_main_loop(void* args)
+{
+	bool* is_active = ((bool**)shared_memory)[3];
+	std::queue<Message>* incoming_msg = ((std::queue<Message>**)shared_memory)[2];
+
+	std::cout << "Initializing Reciever on port " << UDP_RX_PORT << std::endl;
+
+	boost::asio::io_service comm_service;
+	boost::asio::ip::udp::socket comm_socket(comm_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), UDP_RX_PORT));
+
+	boost::asio::ip::udp::endpoint recieved_endpoint;
+	unsigned char recv_buffer[65537];
+
+	while(*is_active)
+	{
+		comm_socket.receive_from(boost::asio::buffer(recv_buffer, 65537), recieved_endpoint);
+		Packet p(recv_buffer);
+		incoming_msg->push(package_message(p, recieved_endpoint.address().to_string()));
+
+		std::cout << "Message recieved from " << recieved_endpoint.address().to_string() << std::endl;
+	}
+
+	std::cout << "Deinitializing Reciever..." << std::endl;
+
+	*is_active = true;
+
+	pthread_exit(nullptr);
+}
+
+void* transciever_main_loop(void* args)
 {
 	bool* is_active = ((bool**)shared_memory)[0];
 	std::queue<Message>* outgoing_msg = ((std::queue<Message>**)shared_memory)[1];
-	std::queue<Message>* incoming_msg = ((std::queue<Message>**)shared_memory)[2];
-	
-	std::cout << "Initializing Communicator..." << std::endl;
+
+	std::cout << "Initializing Sender on port " << UDP_TX_PORT << std::endl;
 
 	boost::asio::io_service comm_service;
-	boost::asio::ip::udp::socket comm_socket(comm_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), UDP_PORT));
-
-	std::cout << "Socket Opened. Listening..." << std::endl;
+	boost::asio::ip::udp::socket comm_socket(comm_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), UDP_TX_PORT));
 
 	while(*is_active)
 	{
@@ -27,18 +53,16 @@ void* communicator_main_loop(void* args)
 			Message m = outgoing_msg->front();
 			std::cout << "Sending message to " << get_endpoint(m) << std::endl;
 
-			boost::asio::ip::udp::endpoint destination(boost::asio::ip::address::from_string(get_endpoint(m)), UDP_PORT);
+			boost::asio::ip::udp::endpoint destination(boost::asio::ip::address::from_string(get_endpoint(m)), UDP_RX_PORT);
 			comm_socket.send_to(boost::asio::buffer(get_packet(m).bytestream(), get_packet(m).size()), destination);
 			outgoing_msg->pop();
 		}
-
-
 
 		// Sleep is necessary - this is every 1ms
 		usleep(1000);
 	}
 
-	std::cout << "Deinitializing Communicator..." << std::endl;
+	std::cout << "Deinitializing Sender..." << std::endl;
 
 	*is_active = true;
 
@@ -64,6 +88,9 @@ std::string get_endpoint(const Message& m)
 
 Communicator::Communicator()
 {
+	this->rx_active = false;
+	this->tx_active = false;
+
 	this->start();
 }
 
@@ -74,29 +101,49 @@ Communicator::~Communicator()
 
 void Communicator::start()
 {
-	if(!this->is_active)
+	if(!this->tx_active)
 	{
-		this->is_active = true;
+		this->tx_active = true;
 
-		shared_memory[0] = (void*)&this->is_active;
+		shared_memory[0] = (void*)&this->tx_active;
 		shared_memory[1] = (void*)&this->outgoing_msg;
-		shared_memory[2] = (void*)&this->incoming_msg;
 
-		if(pthread_create(&this->thread, nullptr, &communicator_main_loop, nullptr))
+		if(pthread_create(&this->thread_trans, nullptr, &transciever_main_loop, nullptr))
 		{
-			this->is_active = false;
-			throw std::runtime_error("Cannot create communicator thread");
+			this->tx_active = false;
+			throw std::runtime_error("Cannot create transciever thread");
+		}
+
+	}
+	if(!this->rx_active)
+	{
+		this->rx_active = true;
+
+		shared_memory[2] = (void*)&this->incoming_msg;
+		shared_memory[3] = (void*)&this->rx_active;
+
+		if(pthread_create(&this->thread_recv, nullptr, &reciever_main_loop, nullptr))
+		{
+			this->rx_active = false;
+			throw std::runtime_error("Cannot create reciever thread");
 		}
 	}
 }
 
 void Communicator::kill()
 {
-	if(this->is_active)
+	if(this->rx_active)
 	{
-		this->is_active = false;
-		while(!this->is_active);
-		this->is_active = false;
+		this->rx_active = false;
+		while(!this->rx_active);
+		this->rx_active = false;
+	}
+
+	if(this->tx_active)
+	{
+		this->tx_active = false;
+		while(!this->tx_active);
+		this->tx_active = false;
 	}
 }
 
