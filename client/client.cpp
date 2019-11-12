@@ -111,8 +111,8 @@ void* receive(void* args)
 		{
 			Message m = com.read_message();
 			Packet received_packet = m.first;
-
-
+			
+		
 		}
 		
 	}
