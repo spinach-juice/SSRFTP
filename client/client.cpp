@@ -55,14 +55,9 @@ int main(int argc, char** argv)
 	{
 		if(com.message_available())
 		{
-			// once we receive a valid return packet update
-			// the state and start the main data transfer
-			//still needs to check if return packet is the same as intial start packet
 			Message m = com.read_message();
-			
 			if(m.first == start_packet)
 				state = 1;
-			
 		}
 	
 		com.send_message(package_message(start_packet,""));
@@ -114,6 +109,9 @@ void* receive(void* args)
 	{
 		if(com.message_available())
 		{
+			Message m = com.read_message();
+			Packet received_packet = m.first;
+
 
 		}
 		
