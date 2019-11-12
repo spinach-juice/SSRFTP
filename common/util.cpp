@@ -1,12 +1,8 @@
 #include "util.h"
-#include <openssl/md5.h>
 #include <iostream>
 #include <fstream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
-
-
-
 
 void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_length)
 {
@@ -64,20 +60,13 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 	return true;
 }
 
-void MD5(std::ifstream* stream, char* file_checksum)
-{ 
-    unsigned char digest[16];
-    MD5_CTX ctx;
-
-    MD5_Init(&ctx);
-    
-    MD5_Update(&ctx,stream,stream->tellg());
-    MD5_Final(digest, &ctx);
-
-    
-    for (int i = 0; i < 16; i++)
-        sprintf(&file_checksum[i*2], "%02x", (unsigned int)digest[i]);
-	
+void MD5(char* file_path, char* file_checksum)
+{
+	std::string cmd = (std::string)"md5sum " + file_path;
+	std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+	if(!pipe)
+		throw std::runtime_error("Could not retrieve md5 checksum from file");
+	file_path = fgets(file_checksum, 32, pipe.get());
 }
 
 unsigned long long getFileSize(std::ifstream* file)
