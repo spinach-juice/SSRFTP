@@ -5,6 +5,7 @@
 #include <string>
 #include <queue>
 #include <vector>
+#include <unistd.h>
 #include "communicator.h"
 #include "packet.h"
 #include "client.h"
@@ -16,6 +17,7 @@ unsigned long const DataPerPacket = 1024;
 int state = 0; 
 bool state_change = false;
 std::vector<Packet> shardPackets;
+Packet return_packet = nullptr;
 Communicator com; 
 
 int main(int argc, char** argv)
@@ -63,8 +65,6 @@ int main(int argc, char** argv)
 		com.send_message(package_message(start_packet,""));
 	}
 	
-
-	
 	Packet current = nullptr;
 	char data[DataPerPacket];
 	
@@ -75,17 +75,27 @@ int main(int argc, char** argv)
 		shardPackets.push_back(current);
 	}
 
-	Packet end_packet = build_shard_end(/*trasmittion id*/5);
-	
 	pthread_create(&send_loop, nullptr,send,nullptr);
 	pthread_create(&receive_loop,nullptr,receive, nullptr);
 
+	//wait for the server to send the request packet
+	while(sizeof(return_packet) == 0)
+	{
+		usleep(1);
+	}
+	
+	unsigned long missing_shards[shard_num];
+	unsigned long  num_missing_shards;
+	
+	
+	interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
+
+ 	std::vector<Packet> new_shardPackets;
+	//change the packets that are being sent to only the ones we need
+	for(int i = 0; i < num_missing_shards;i++)
+		new_shardPackets.pushback(shardPackets[missing_shards[i]]);
 
 	
-
-	
-	
-
 	
   return 0;
 }
@@ -110,9 +120,8 @@ void* receive(void* args)
 		if(com.message_available())
 		{
 			Message m = com.read_message();
-			Packet received_packet = m.first;
-			
-		
+			return_packet = m.first;
+			state_change = 1;
 		}
 		
 	}
