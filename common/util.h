@@ -5,7 +5,7 @@
 #include <fstream>
 
 unsigned long long getFileSize(std::ifstream* file);
-void MD5(std::ifstream* stream, char* file_checksum);
+void MD5(char* file_path, char* file_checksum);
 void ascii2hex(char const * const ascii, unsigned char* hex, unsigned int ascii_length);
 void hex2ascii(unsigned char const * const hex, char* ascii, unsigned int hex_length);
 bool uchar_array_equal(unsigned char const * const a, unsigned char const * const b, unsigned int size);
