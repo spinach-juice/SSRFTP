@@ -22,7 +22,7 @@ Communicator com;
 
 int main(int argc, char** argv)
 {
-	
+	std::vector<Packet> full_shard_Packet;
 	
 	std::ifstream* file;	
 	unsigned long long fileSize;
@@ -36,6 +36,8 @@ int main(int argc, char** argv)
 	tcpListener full_file;
 	full_file.Listen();
 	file = &full_file.getPath();
+	
+	
 	fileSize = getFileSize(file);
 	
 	shard_num = fileSize/DataPerPacket;
@@ -45,7 +47,9 @@ int main(int argc, char** argv)
 
 	//assume that this works for now
 	char file_checksum[33]; 
-	MD5(file,file_checksum); 
+	char* buffer = getFileContents(file,fileSize);
+	
+	MD5(buffer,file_checksum); 
 
 
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
@@ -68,7 +72,7 @@ int main(int argc, char** argv)
 	Packet current = nullptr;
 	char data[DataPerPacket];
 	
-	for(int i = 0; i< shard_num; i++)
+	for(int i = 0; i< (int)shard_num; i++)
 	{
 		file->read(data, sizeof(data-1));
 		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
@@ -87,17 +91,20 @@ int main(int argc, char** argv)
 	unsigned long missing_shards[shard_num];
 	unsigned long  num_missing_shards;
 	
-	
+	full_shard_Packet = shardPackets;
 	interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
 
  	std::vector<Packet> new_shardPackets;
 	//change the packets that are being sent to only the ones we need
-	for(int i = 0; i < num_missing_shards;i++)
-		new_shardPackets.pushback(shardPackets[missing_shards[i]]);
+	for(int i = 0; i < (int)num_missing_shards;i++)
+		new_shardPackets.push_back(shardPackets[missing_shards[i]]);
 
+	shardPackets = new_shardPackets;
+	
+	state_change = 0; 
 	
 	
-  return 0;
+  	return 0;
 }
 
 
@@ -106,7 +113,7 @@ void* send(void* args)
 
 	while(!state_change)
 	{
-		for(int i = 0; i < sizeof(shardPackets); i++)
+		for(int i = 0; i < (int)sizeof(shardPackets); i++)
 			com.send_message(package_message(shardPackets[i],""));
 		
 	}
