@@ -2,7 +2,11 @@ CCOMP=g++
 CFLAGS=-O3 -Wall -std=c++11 -fPIC
 LIBFLAGS=-lboost_system -pthread -lssl
 
+<<<<<<< HEAD
 SOURCE=packet.cpp util.cpp communicator.cpp
+=======
+SOURCE=packet.cpp util.cpp rest_server.cpp
+>>>>>>> origin/rest_server
 TEST_SRC=test_main.cpp packet_tests.cpp util_tests.cpp
 
 OBJS=$(SOURCE:.cpp=.o)
