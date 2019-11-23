@@ -47,7 +47,9 @@ int main(int argc, char** argv)
 
 	//assume that this works for now
 	char file_checksum[33]; 
-	char* buffer = getFileContents(file,fileSize);
+	char buffer[fileSize + 1];
+	getFileContents(file,fileSize, buffer);
+	
 	
 	MD5(buffer,file_checksum); 
 
@@ -102,6 +104,22 @@ int main(int argc, char** argv)
 	shardPackets = new_shardPackets;
 	
 	state_change = 0; 
+	pthread_create(&send_loop, nullptr,send,nullptr);
+	pthread_create(&receive_loop,nullptr,receive, nullptr);
+	bool success_state = true;
+
+	Packet transfer_complete  = build_transfer_complete(/*trasmittion id*/5, success_state);
+	
+	while(!state_change)
+	{
+		if(com.message_available())
+		{
+			Message m = com.read_message();
+			if(m.first == transfer_complete)
+				state = 1;
+		}
+	
+	}
 	
 	
   	return 0;

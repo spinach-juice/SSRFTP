@@ -169,13 +169,12 @@ std::vector<unsigned long> ulong_array_singles(unsigned long const * const array
 
 	return singles;
 }
-char* getFileContents(std::ifstream* file,unsigned long long fileSize)
+void getFileContents(std::ifstream* file,unsigned long long fileSize, char *buffer)
 {
-	char buffer[fileSize+1];
+	char temp[fileSize +1];
+	file->read(temp, fileSize);
 	
-	file->read(buffer, fileSize);
-	
-	return buffer;
+	strncpy(buffer, temp,fileSize);
 	
 }
 
