@@ -13,6 +13,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 #include "packet.h"
+#include "communicator.h"
 
 using boost::asio::ip::udp;
 
@@ -32,10 +33,14 @@ private:
     boost::asio::ip::udp::endpoint receive_endpoint;
     boost::asio::ip::udp::endpoint send_endpoint;*/
     
-    queue<Message> read_buff;
-    queue<Message> send_buff;
+    std::queue<Message> recv_buff;
+    std::queue<Message> send_buff;
     
-    Communicator server_comm;
+    bool* shard_request_checker;
+    
+    Communicator* server_comm;
+    
+    std::fstream file;
     
     
 public:   
@@ -47,6 +52,6 @@ public:
     //void send();
     void kill();
 
-}
+};
 
 #endif
