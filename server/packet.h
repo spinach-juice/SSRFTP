@@ -1,4 +1,4 @@
-ifndef __PACKET__H__
+#ifndef __PACKET__H__
 #define __PACKET__H__
 
 #include <string>
