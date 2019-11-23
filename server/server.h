@@ -2,38 +2,51 @@
 #define _SERVER_H
 
 
-#include <ctime>
+#define MAX_SIZE 65536
+
 #include <iostream>
 #include <string>
+#include <queue>
+#include <fstream>
 #include <boost/array.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
+#include "packet.h"
 
 using boost::asio::ip::udp;
 
-#define MAX_SIZE 65536
+typedef std::pair<Packet,std::string> Message;
+
+Message package_message(const Packet& p, std::string endpoint);
+Packet get_packet(const Message& m);
+std::string get_endpoint(const Message& m);
 
 class server
 {
 private:
-    
-    // used variables 
+   
+    /*// ASIO communication variables
     boost::asio::io_service io_service;
-    udp::socket socket_;
-    udp::endpoint remote_endpoint_;
-    boost::array<char, 1> recv_buffer_;
- 
+    boost::asio::ip::udp::socket socket_;
+    boost::asio::ip::udp::endpoint receive_endpoint;
+    boost::asio::ip::udp::endpoint send_endpoint;*/
     
-    void start_receive();
-    void handle_receive(const boost::system::error_code& error,
-        std::size_t);
-    void handle_send(boost::shared_ptr<std::string> /*message*/,
-        const boost::system::error_code& /*error*/,
-        std::size_t);
-
-public:
+    queue<Message> read_buff;
+    queue<Message> send_buff;
+    
+    Communicator server_comm;
+    
+    
+public:   
+    /*---------Constructor----------------------------*/
     server();
-};
+    ~server();
+    
+    void start_server();
+    //void send();
+    void kill();
+
+}
 
 #endif

@@ -11,7 +11,7 @@ INCFLAGS=-I$(COMMON_DIR)
 
 EXECUTABLE=SSRFTP_server
 
-SOURCE=server.cpp
+SOURCE=server.cpp packet.cpp communicator.cpp util.cpp
 
 OBJS=$(SOURCE:.cpp=.o)
 

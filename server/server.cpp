@@ -1,48 +1,48 @@
 #include "server.h"
 
-// constructor
-// creates a server and a listener @ socket 13
-server::server() : socket_(io_service, udp::endpoint(udp::v4(), 13))
+server::server() //TODO - change comm port and endpoint from default
 {
-    start_receive();
-    io_service.run();
+    
 }
 
-void server::start_receive()
+server::~server()
 {
-    socket_.async_receive_from(
-        boost::asio::buffer(recv_buffer_), remote_endpoint_,
-        boost::bind(&server::handle_receive, this, 
-        boost::asio::placeholders::error,
-        boost::asio::placeholders::bytes_transferred));
+    this->kill();
 }
-
-void server::handle_receive(const boost::system::error_code& error,
-    std::size_t sz = MAX_SIZE)
+void server::start_server()
 {
-     if (!error || error == boost::asio::error::message_size)
-     {
-        boost::shared_ptr<std::string> message(
-          new std::string("This is a test bit string"));
-
-        socket_.async_send_to(boost::asio::buffer(*message), 
-            remote_endpoint_, boost::bind(&server::handle_send, 
-            this, message,boost::asio::placeholders::error,
-            boost::asio::placeholders::bytes_transferred));
-
-        start_receive();
+    server_comm = new Communicator();
+    
+    bool server_end = false;
+    
+    while(!server_send)
+    {
+        if(server_comm.message_available())
+        {
+            cout << "Message available" << endl << "Receiving...." << endl
+                << endl;
+            recv_buff.push(server_comm.read_message());
+        }
+        
+        //Send logic
+        //sends if there is stuff pending in the send buffer
+        
+        else if(!send_buff.empty())
+        {
+            cout << "Messages pending to send !!" << endl << "Sending..."
+                << endl << endl;
+            while(!send_buff.empty())
+                server_comm.send_message(send_buff.pop())
+                
+            cout << "Send queue empty" << endl << endl;
+       }     
     }
+    
 }
- 
-void server::handle_send(boost::shared_ptr<std::string> /*message*/,
-    const boost::system::error_code& /*error*/,
-    std::size_t sz = MAX_SIZE/*bytes_transferred*/)
+
+void server::kill()
 {
-
+    server_comm.kill();
 }
-
-int main()
-{}
-
 
 
