@@ -36,7 +36,11 @@ private:
     std::queue<Message> recv_buff;
     std::queue<Message> send_buff;
     
+    bool* shard_request_checker;
+    
     Communicator* server_comm;
+    
+    fstream file;
     
     
 public:   

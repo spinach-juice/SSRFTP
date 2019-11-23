@@ -14,33 +14,54 @@ server::~server()
 void server::start_server()
 {
     server_comm = new Communicator();
-    
     bool server_send = false;
     
     while(!server_send)
     {
+        string filename;
+        Packet curr;
+        
         if(server_comm->message_available())
-        {
-            cout << "Message available" << std::endl << "Receiving...." << std::endl
-                << std::endl;
-            recv_buff.push(server_comm->read_message());
-        }
-        
-        //Send logic
-        //sends if there is stuff pending in the send buffer
-        
-        else if(!send_buff.empty())
-        {
-            cout << "Messages pending to send !!" << std::endl << "Sending..."
-                << endl << endl;
-            while(!send_buff.empty())
+        {   
+            // client start packet params
+            char* md5_chksum;
+            unsigned long long file_size;
+            unsigned long num_shards;
+            unsigned short trans_id;
+            char* destination_path;
+            unsigned short path_length;
+            
+            // normal shard parameters
+            unsigned long shard_num;
+            unsigned short trans_id;
+            unsigned char* shard_data;
+            unsigned short data_size;
+            
+            curr = server_comm->read_message().get_packet();
+            
+            switch(curr.int_type())
             {
-                server_comm->send_message(send_buff.front());
-                send_buff.pop();
-            }
+                case(0):
+                    if(interpret_client_start(curr, md5_chksum, 
+                        file_size, num_shards, trans_id, 
+                            destination_path, path_length))
+                    break;
                 
-            cout << "Send queue empty" << std::endl << std::endl;
-       }     
+                case(1)
+                    if(interpret_file_shard(curr, shard_num,
+                        trans_id, shard_data, data_size))
+                    {
+                        filename = "shard/" + to_string(shard_num)
+                            +".shrd";
+                        file.open(filename, ios::out | ios::trunc);
+                        file.close();
+                    }
+                    break;
+                    
+                default:
+                    break;
+            }
+        } 
     }
     
 }
