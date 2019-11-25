@@ -9,7 +9,7 @@ static void* shared_memory[3];
 
 typedef std::string string;
 
-static string http_respond(string request, std::map<string, string(*)(const string, const string, const string, const string)>* handlers)
+static string http_respond(string request, std::map<string, string(*)(const string, const string, const string, const string, const std::map<string,string>)>* handlers)
 {
 	string endpoint;
 	size_t i = request.find_first_of(' ') + 1;
@@ -23,6 +23,33 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 		endpoint.erase(0, 11);
 	else
 		endpoint = "";
+
+	std::map<string,string> queries;
+
+	size_t endpoint_len = endpoint.find_first_of('?');
+	i = endpoint_len + 1;
+	while(i < endpoint.size())
+	{
+		string key;
+		string value;
+
+		while(i < endpoint.size() && endpoint.at(i) != '=')
+		{
+			key.push_back(endpoint.at(i));
+			i++;
+		}
+		i++;
+		while(i < endpoint.size() && endpoint.at(i) != '&')
+		{
+			value.push_back(endpoint.at(i));
+			i++;
+		}
+		i++;
+
+		queries[key] = value;
+	}
+
+	endpoint.erase(endpoint_len, endpoint.size() - endpoint_len);
 	
 	if((*handlers)[endpoint] != nullptr)
 	{
@@ -61,7 +88,7 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 		size_t data_size = atoi(content_length.c_str());
 		data.erase(0, data.size() - data_size);
 
-		return (*handlers)[endpoint](request_type, accept_types, data_type, data);
+		return (*handlers)[endpoint](request_type, accept_types, data_type, data, queries);
 	}
 
 	return "HTTP/1.1 400 Bad Request\r\n\r\n{\r\n\t\"code\": 400,\r\n\t\"message\": \"Invalid REST endpoint.\"\r\n}";
@@ -70,7 +97,7 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 static void* server_main_loop(void* args)
 {
 	bool* is_active = ((bool**)shared_memory)[0];
-	std::map<string, string(*)(const string, const string, const string, const string)>* handlers = ((std::map<string, string(*)(const string, const string, const string, const string)>**)shared_memory)[1];
+	std::map<string, string(*)(const string, const string, const string, const string, const std::map<string,string>)>* handlers = ((std::map<string, string(*)(const string, const string, const string, const string, const std::map<string,string>)>**)shared_memory)[1];
 	unsigned short* port = ((unsigned short**)shared_memory)[2];
 
 	boost::asio::io_service ios;
@@ -141,7 +168,7 @@ void RestServer::kill()
 	}
 }
 
-void RestServer::subscribe(const string endpoint, string (*handler)(const string, const string, const string, const string))
+void RestServer::subscribe(const string endpoint, string (*handler)(const string, const string, const string, const string, const std::map<string,string>))
 {
 	this->handlers[endpoint] = handler;
 }
