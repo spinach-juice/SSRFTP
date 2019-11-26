@@ -19,28 +19,31 @@ void server::start_server()
     while(!server_send)
     {
         string filename;
-        
+            
         if(server_comm->message_available())
         {   
-        
+            
             /*-------current data storage variables for packets-----*/
             // common
             unsigned short trans_id;
             
-            // client start packet params
-            char* md5_chksum;
+           // client start packet params
+            char* md5_chksum = nullptr;
             unsigned long long file_size;
             unsigned long num_shards;
-            char* destination_path;
+            char* destination_path = nullptr; // to be cancelled
             unsigned short path_length;
             
             // normal shard parameters
             unsigned long shard_num;
-            unsigned char* shard_data;
+            unsigned char* shard_data = nullptr;
             unsigned short data_size;
+            
+            fstream repeat_checker;
             
             Packet curr = get_packet(server_comm->read_message());
             
+            //switch(1)
             switch(curr.int_type())
             {
                 // client start packet
@@ -51,13 +54,29 @@ void server::start_server()
                     {
                         filename = "shard/clientstart.shrd";
                         
-                        // do I print out different variants of file sizes?
-                        file << md5_chksum << endl
-                            << file_size << endl
-                            << num_shards << endl
-                            << trans_id << endl
-                            << path_length << endl
-                            << destination_path << endl;
+                        if(!repeat_checker.open(filename, ios::in))
+                        { 
+                         
+                            // do I print out different variants of file sizes?
+                            if(md5_chksum != nullptr)
+                            {
+                                file << md5_chksum << endl;
+                                    << file_size << endl
+                                    << num_shards << endl
+                                    << trans_id << endl
+                                    << path_length << endl
+                                    << destination_path << endl;
+                            } else
+                            {
+                                cout << "Client start packet MD5 Checksum " 
+                                    << "missing.\n"
+                                    << " Critical error. Exiting..." << endl;
+                                return;
+                            }
+                        }else 
+                        {
+                            
+                        }
                     }
                     break;
                 
@@ -66,6 +85,7 @@ void server::start_server()
                     if(interpret_file_shard(curr, shard_num,
                         trans_id, shard_data, data_size))
                     {
+                        cout << shard_num << endl;
                         filename = "shard/" + to_string(shard_num)
                             +".shrd";
                         file.open(filename, ios::out | ios::trunc);
@@ -81,21 +101,29 @@ void server::start_server()
                 default:
                     break;
             }
+            
+            
+            
+            // check if you start receiving the same data again.
+            // end if receive no packets
+            
         } 
     }
     
+    
+    return;
 }
 
 void server::kill()
 {
-    server_comm->kill();
+    //server_comm->kill();
 }
 
 int main()
 {
     server test_server;
     
-    //server.start_server();
+    test_server.start_server();
 }
 
 

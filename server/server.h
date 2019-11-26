@@ -40,7 +40,7 @@ private:
     
     Communicator* server_comm;
     
-    std::fstream file;
+    std::ofstream file;
     
     
 public:   
