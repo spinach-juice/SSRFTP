@@ -17,14 +17,14 @@ void* reciever_main_loop(void* args)
 
 	boost::asio::ip::udp::endpoint recieved_endpoint;
 	unsigned char recv_buffer[65537];
-
+	
 	while(*is_active)
 	{
 		comm_socket.receive_from(boost::asio::buffer(recv_buffer, 65537), recieved_endpoint);
 		Packet p(recv_buffer);
 		incoming_msg->push(package_message(p, recieved_endpoint.address().to_string()));
 	}
-
+	
 	pthread_exit(nullptr);
 }
 
@@ -119,6 +119,8 @@ void Communicator::kill()
 	if(this->rx_active)
 	{
 		this->rx_active = false;
+		usleep(100000);
+		pthread_cancel(this->thread_recv);
 		pthread_join(this->thread_recv, nullptr);
 	}
 
