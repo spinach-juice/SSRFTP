@@ -28,7 +28,7 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 
 	size_t endpoint_len = endpoint.find_first_of('?');
 	i = endpoint_len + 1;
-	while(i < endpoint.size())
+	while(i < endpoint.size() && i != 0)
 	{
 		string key;
 		string value;
@@ -49,7 +49,8 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 		queries[key] = value;
 	}
 
-	endpoint.erase(endpoint_len, endpoint.size() - endpoint_len);
+	if(endpoint_len < endpoint.size())
+		endpoint.erase(endpoint_len, endpoint.size() - endpoint_len);
 	
 	if((*handlers)[endpoint] != nullptr)
 	{
@@ -62,16 +63,16 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 		}
 
 		string accept_types;
-		i = request.find("Accept: ") + 8;
-		while(i < request.size() && request.at(i) != '\r' && request.at(i) != '\n')
+		i = request.find("\r\nAccept: ") + 10;
+		while(i >= 10 && i < request.size() && request.at(i) != '\r' && request.at(i) != '\n')
 		{
 			accept_types.push_back(request.at(i));
 			i++;
 		}
 
 		string data_type;
-		i = request.find("Content-Type: ") + 14;
-		while(i < request.size() && request.at(i) != '\r' && request.at(i) != '\n')
+		i = request.find("\r\nContent-Type: ") + 16;
+		while(i >= 16 && i < request.size() && request.at(i) != '\r' && request.at(i) != '\n')
 		{
 			data_type.push_back(request.at(i));
 			i++;
@@ -79,8 +80,8 @@ static string http_respond(string request, std::map<string, string(*)(const stri
 
 		string data = request;
 		string content_length;
-		i = request.find("Content-Length: ") + 16;
-		while(i < request.size() && request.at(i) != '\r' && request.at(i) != '\n')
+		i = request.find("\r\nContent-Length: ") + 18;
+		while(i >= 18 && i < request.size() && request.at(i) != '\r' && request.at(i) != '\n')
 		{
 			content_length.push_back(request.at(i));
 			i++;
@@ -164,6 +165,8 @@ void RestServer::kill()
 	if(this->server_active)
 	{
 		this->server_active = false;
+		usleep(100000);
+		pthread_cancel(thread_http);
 		pthread_join(thread_http, nullptr);
 	}
 }
