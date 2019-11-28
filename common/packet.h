@@ -18,6 +18,7 @@ public:
 	unsigned int size();
 	void replace_checksum();
 
+	friend bool operator==(Packet&, Packet&);
 private:
 
 	unsigned short calc_checksum();
@@ -26,6 +27,8 @@ private:
 	unsigned short data_size;
 
 };
+
+bool operator==(Packet& p1, Packet& p2);
 
 Packet build_client_start(char const * const md5_chksum, unsigned long long const file_size, unsigned long const num_shards, unsigned short const trans_id, char const * const destination_path, unsigned short const path_length);
 Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, unsigned char const * const shard_data, unsigned short const data_size);

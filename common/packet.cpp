@@ -28,6 +28,18 @@ Packet::~Packet()
 	delete this->data;
 }
 
+bool operator==(Packet& p1, Packet& p2)
+{
+	unsigned int packet_size = p1.size();
+	if(p1.size() != p2.size())
+		return false;
+
+	for(unsigned int i = 0; i < packet_size; i++)
+		if(p1.bytestream()[i] != p2.bytestream()[i])
+			return false;
+	return true;
+}
+
 unsigned char const * const Packet::bytestream()
 {
 	return data;
