@@ -2,8 +2,8 @@ CCOMP=g++
 CFLAGS=-O3 -Wall -std=c++11 -fPIC
 LIBFLAGS=-lboost_system -pthread
 
-SOURCE=packet.cpp util.cpp communicator.cpp
-TEST_SRC=test_main.cpp packet_tests.cpp util_tests.cpp communicator_tests.cpp
+SOURCE=packet.cpp util.cpp rest_server.cpp communicator.cpp
+TEST_SRC=test_main.cpp packet_tests.cpp util_tests.cpp rest_server_tests.cpp communicator_tests.cpp
 
 OBJS=$(SOURCE:.cpp=.o)
 TEST_OBJS=$(TEST_SRC:.cpp=.o)
