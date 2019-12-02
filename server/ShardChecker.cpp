@@ -1,10 +1,16 @@
 #include "ShardChecker.h"
 
+ShardChecker::ShardChecker()
+{
+
+}
+
 bool ShardChecker::extractClientStartPacket()
 {
     fstream in;
+    in.open("shard/clientstart.shrd", ios::in);
     
-    if(!in.open("shard/clientstart.shrd", ios::in))
+    if(!in.is_open())
     {
         cout << "Missing Client Start Packet" << endl << endl;
         return false;   
@@ -15,8 +21,7 @@ bool ShardChecker::extractClientStartPacket()
         in.getline(md5_chksum, 128);
         
         // skip 11 bits (the filesize entry + \n);
-        long pos = in.tellg();
-        in.seekg(10, pos);
+        in.seekg(10, ios::cur);
         
         char* temp;
         in.getline(temp, 10);
@@ -29,16 +34,22 @@ bool ShardChecker::extractClientStartPacket()
     return true;
 }
 
-vector ShardChecker::verifyShards()
+vector<unsigned long> ShardChecker::verifyShards()
 {
     fstream in;
-    vector<int> miss_shrd [64];
+    vector<unsigned long> miss_shrd;
     
-    for(int i = 0; i < num_shards; num_shards+)
-        if(!in.open("shard/" + i + ".shrd", ios::in))
+    for(unsigned long i = 0; i < num_shards; num_shards++)
+    {
+        string filename = "shard/" + i;
+        filename = filename + ".shrd";
+        in.open(filename, ios::in);
+        
+        if(!in.is_open())
             miss_shrd.push_back(i);
+    }   
             
-    return miss_shrd;
-]
+   return miss_shrd;
+}
 
 

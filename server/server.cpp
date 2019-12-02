@@ -14,9 +14,9 @@ server::~server()
 void server::start_server()
 {
     server_comm = new Communicator();
-    bool server_send = false;
+    bool transfer_complete = false;
     
-    while(!server_send)
+    while(!transfer_complete)
     {
         string filename;
             
@@ -39,8 +39,12 @@ void server::start_server()
             unsigned char* shard_data = nullptr;
             unsigned short data_size;
             
+            // temp ifstream object to check if a file already exists
             fstream repeat_checker;
-            
+                
+            ShardChecker chek;
+            vector <unsigned long> missing_shards;
+            unsigned long* miss_shard_arr;
             Packet curr = get_packet(server_comm->read_message());
             
             //switch(1)
@@ -53,19 +57,23 @@ void server::start_server()
                             destination_path, path_length))
                     {
                         filename = "shard/clientstart.shrd";
+                        repeat_checker.open(filename, ios::in);
                         
-                        if(!repeat_checker.open(filename, ios::in))
+                        // checks if file exits, if not creates one and inputs
+                        if(!repeat_checker.is_open())
                         { 
                          
                             // do I print out different variants of file sizes?
                             if(md5_chksum != nullptr)
                             {
-                                file << md5_chksum << endl;
+                                file.open(filename, ios::out | ios::trunc);
+                                file << md5_chksum << endl
                                     << file_size << endl
                                     << num_shards << endl
                                     << trans_id << endl
                                     << path_length << endl
                                     << destination_path << endl;
+                                file.close();
                             } else
                             {
                                 cout << "Client start packet MD5 Checksum " 
@@ -75,8 +83,11 @@ void server::start_server()
                             }
                         }else 
                         {
-                            
+                            chek.extractClientStartPacket();
+                            missing_shards = chek.verifyShards();
                         }
+                        
+                        repeat_checker.close();
                     }
                     break;
                 
@@ -85,16 +96,25 @@ void server::start_server()
                     if(interpret_file_shard(curr, shard_num,
                         trans_id, shard_data, data_size))
                     {
-                        cout << shard_num << endl;
                         filename = "shard/" + to_string(shard_num)
                             +".shrd";
-                        file.open(filename, ios::out | ios::trunc);
-                        file << shard_num << endl 
-                            << trans_id << endl
-                            << data_size << endl
-                            << shard_data << endl; 
-                            
-                        file.close();
+                        repeat_checker.open(filename, ios::in);
+                        
+                        
+                        if(!repeat_checker.is_open())
+                        {
+                            file.open(filename, ios::out | ios::trunc);
+                            file << shard_num << endl 
+                                << trans_id << endl
+                                << data_size << endl
+                                << shard_data << endl; 
+                            file.close();
+                        }
+                        else 
+                        {
+                            chek.extractClientStartPacket();
+                            missing_shards = chek.verifyShards();
+                        }
                     }
                     break;
                     
@@ -103,10 +123,24 @@ void server::start_server()
             }
             
             
-            
-            // check if you start receiving the same data again.
-            // end if receive no packets
-            
+            //This part calls functions to build the Shard Request Packet
+            if(true)
+            {  
+                miss_shard_arr = new unsigned long[missing_shards.size()];
+                for(unsigned long i = 0; i < missing_shards.size(); i ++)
+                    miss_shard_arr[i] = missing_shards[i];
+                
+                server_comm->send_message(
+                    Message(build_shard_request(7 /*trans id*/, 
+                        miss_shard_arr, missing_shards.size())
+                        , "192.168.1.1"));
+            }
+            else
+            {
+                cout << "Transfer Complete!" << endl << endl;
+                 transfer_complete = true;
+            }
+ 
         } 
     }
     

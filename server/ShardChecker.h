@@ -5,6 +5,10 @@
 #include "packet.h"
 #include <fstream>
 #include <vector>
+#include <iostream>
+#include <string>
+
+using namespace std;
 
 class ShardChecker
 {
@@ -16,8 +20,9 @@ private:
   
 
 public:
+    ShardChecker();
     bool extractClientStartPacket();
-    vector verifyShards();
+    vector<unsigned long> verifyShards();
 };
 
 #endif

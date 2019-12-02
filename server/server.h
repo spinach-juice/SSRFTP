@@ -14,6 +14,7 @@
 #include <boost/asio.hpp>
 #include "packet.h"
 #include "communicator.h"
+#include "ShardChecker.h"
 
 using boost::asio::ip::udp;
 
