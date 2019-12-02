@@ -14,7 +14,10 @@
 #include <boost/asio.hpp>
 #include "packet.h"
 #include "communicator.h"
+<<<<<<< HEAD
 #include "ShardChecker.h"
+=======
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
 
 using boost::asio::ip::udp;
 
@@ -41,7 +44,11 @@ private:
     
     Communicator* server_comm;
     
+<<<<<<< HEAD
     std::ofstream file;
+=======
+    fstream file;
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
     
     
 public:   

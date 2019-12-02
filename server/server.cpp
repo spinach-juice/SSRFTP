@@ -14,6 +14,7 @@ server::~server()
 void server::start_server()
 {
     server_comm = new Communicator();
+<<<<<<< HEAD
     bool transfer_complete = false;
     
     while(!transfer_complete)
@@ -32,10 +33,28 @@ void server::start_server()
             unsigned long long file_size;
             unsigned long num_shards;
             char* destination_path = nullptr; // to be cancelled
+=======
+    bool server_send = false;
+    
+    while(!server_send)
+    {
+        string filename;
+        Packet curr;
+        
+        if(server_comm->message_available())
+        {   
+            // client start packet params
+            char* md5_chksum;
+            unsigned long long file_size;
+            unsigned long num_shards;
+            unsigned short trans_id;
+            char* destination_path;
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
             unsigned short path_length;
             
             // normal shard parameters
             unsigned long shard_num;
+<<<<<<< HEAD
             unsigned char* shard_data = nullptr;
             unsigned short data_size;
             
@@ -51,10 +70,21 @@ void server::start_server()
             switch(curr.int_type())
             {
                 // client start packet
+=======
+            unsigned short trans_id;
+            unsigned char* shard_data;
+            unsigned short data_size;
+            
+            curr = server_comm->read_message().get_packet();
+            
+            switch(curr.int_type())
+            {
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
                 case(0):
                     if(interpret_client_start(curr, md5_chksum, 
                         file_size, num_shards, trans_id, 
                             destination_path, path_length))
+<<<<<<< HEAD
                     {
                         filename = "shard/clientstart.shrd";
                         repeat_checker.open(filename, ios::in);
@@ -93,11 +123,17 @@ void server::start_server()
                 
                 // normal shard packet
                 case(1):
+=======
+                    break;
+                
+                case(1)
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
                     if(interpret_file_shard(curr, shard_num,
                         trans_id, shard_data, data_size))
                     {
                         filename = "shard/" + to_string(shard_num)
                             +".shrd";
+<<<<<<< HEAD
                         repeat_checker.open(filename, ios::in);
                         
                         
@@ -115,12 +151,17 @@ void server::start_server()
                             chek.extractClientStartPacket();
                             missing_shards = chek.verifyShards();
                         }
+=======
+                        file.open(filename, ios::out | ios::trunc);
+                        file.close();
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
                     }
                     break;
                     
                 default:
                     break;
             }
+<<<<<<< HEAD
             
             
             //This part calls functions to build the Shard Request Packet
@@ -141,6 +182,8 @@ void server::start_server()
                  transfer_complete = true;
             }
  
+=======
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
         } 
     }
     
@@ -150,6 +193,7 @@ void server::start_server()
 
 void server::kill()
 {
+<<<<<<< HEAD
     //server_comm->kill();
 }
 
@@ -158,6 +202,9 @@ int main()
     server test_server;
     
     test_server.start_server();
+=======
+    server_comm->kill();
+>>>>>>> 5f99fe1dabfa9b13a7fe687b370cafacd8469ffa
 }
 
 
