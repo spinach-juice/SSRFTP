@@ -11,7 +11,7 @@ INCFLAGS=-I$(COMMON_DIR)
 
 EXECUTABLE=SSRFTP_server
 
-SOURCE=server.cpp  ShardChecker.cpp
+SOURCE=server.cpp ShardChecker.cpp
 
 OBJS=$(SOURCE:.cpp=.o)
 
