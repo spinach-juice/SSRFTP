@@ -4,13 +4,13 @@ CFLAGS=-O3 -Wall -std=c++11
 COMMONLIB=SSRFTP_common
 COMMON_DIR=../common
 
-LIBFLAGS=-lboost_system -l$(COMMONLIB) -pthread -L$(COMMON_DIR) -Wl,-rpath=$(COMMON_DIR)
+LIBFLAGS=-lboost_system -l$(COMMONLIB) -pthread -L$(COMMON_DIR) -Wl,-rpath=$(COMMON_DIR) -lssl
 
 INCFLAGS=-I$(COMMON_DIR)
 
 EXECUTABLE=SSRFTP_client
 
-SOURCE=client.cpp
+SOURCE=client.cpp tcp_listener.cpp
 
 OBJS=$(SOURCE:.cpp=.o)
 
