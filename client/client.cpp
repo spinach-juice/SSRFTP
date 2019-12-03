@@ -17,7 +17,6 @@ unsigned long const DataPerPacket = 1024;
 int state = 0; 
 bool state_change = false;
 std::vector<Packet> shardPackets;
-Packet return_packet = nullptr;
 Communicator com; 
 
 int main(int argc, char** argv)
@@ -28,8 +27,8 @@ int main(int argc, char** argv)
 	unsigned long long fileSize;
 	unsigned long shard_num;
 	unsigned short trans_id = 0;
-	char const* destination_path = "some path";
-	unsigned short path_length = 0;
+	char const* destination_path = "/Desktop/Senior Design/SSRFTP/client/testfile";
+	unsigned short path_length = 45;
 	pthread_t send_loop;
 	pthread_t receive_loop;
 	
@@ -71,11 +70,13 @@ int main(int argc, char** argv)
 		com.send_message(package_message(start_packet,""));
 	}
 	
-	Packet current = nullptr;
+	
 	char data[DataPerPacket];
+	Packet current = build_file_shard(0, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
 	
 	for(int i = 0; i< (int)shard_num; i++)
 	{
+		
 		file->read(data, sizeof(data-1));
 		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
 		shardPackets.push_back(current);
@@ -85,10 +86,13 @@ int main(int argc, char** argv)
 	pthread_create(&receive_loop,nullptr,receive, nullptr);
 
 	//wait for the server to send the request packet
-	while(sizeof(return_packet) == 0)
+	while(com.message_available())
 	{
 		usleep(1);
 	}
+
+	Message m = com.read_message();
+	Packet return_packet = m.first;
 	
 	unsigned long missing_shards[shard_num];
 	unsigned long  num_missing_shards;
@@ -97,6 +101,7 @@ int main(int argc, char** argv)
 	interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
 
  	std::vector<Packet> new_shardPackets;
+
 	//change the packets that are being sent to only the ones we need
 	for(int i = 0; i < (int)num_missing_shards;i++)
 		new_shardPackets.push_back(shardPackets[missing_shards[i]]);
@@ -144,12 +149,31 @@ void* receive(void* args)
 	{
 		if(com.message_available())
 		{
-			Message m = com.read_message();
-			return_packet = m.first;
 			state_change = 1;
 		}
 		
 	}
-	
 
 }
+
+void getDataPath()
+{
+
+}
+void getMD5checksum()
+{
+
+}
+void sendStart()
+{
+
+}
+void sendData()
+{
+
+}
+
+
+
+
+
