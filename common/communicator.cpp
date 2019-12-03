@@ -12,27 +12,19 @@ void* reciever_main_loop(void* args)
 	bool* is_active = ((bool**)shared_memory)[3];
 	std::queue<Message>* incoming_msg = ((std::queue<Message>**)shared_memory)[2];
 
-	std::cout << "Initializing Reciever on port " << UDP_RX_PORT << std::endl;
-
 	boost::asio::io_service comm_service;
 	boost::asio::ip::udp::socket comm_socket(comm_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), UDP_RX_PORT));
 
 	boost::asio::ip::udp::endpoint recieved_endpoint;
 	unsigned char recv_buffer[65537];
-
+	
 	while(*is_active)
 	{
 		comm_socket.receive_from(boost::asio::buffer(recv_buffer, 65537), recieved_endpoint);
 		Packet p(recv_buffer);
 		incoming_msg->push(package_message(p, recieved_endpoint.address().to_string()));
-
-		std::cout << "Message recieved from " << recieved_endpoint.address().to_string() << std::endl;
 	}
-
-	std::cout << "Deinitializing Reciever..." << std::endl;
-
-	*is_active = true;
-
+	
 	pthread_exit(nullptr);
 }
 
@@ -41,30 +33,22 @@ void* transciever_main_loop(void* args)
 	bool* is_active = ((bool**)shared_memory)[0];
 	std::queue<Message>* outgoing_msg = ((std::queue<Message>**)shared_memory)[1];
 
-	std::cout << "Initializing Sender on port " << UDP_TX_PORT << std::endl;
-
 	boost::asio::io_service comm_service;
 	boost::asio::ip::udp::socket comm_socket(comm_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), UDP_TX_PORT));
 
 	while(*is_active)
 	{
-		if(!(outgoing_msg->empty()))
+		while(!(outgoing_msg->empty()))
 		{
 			Message m = outgoing_msg->front();
-			std::cout << "Sending message to " << get_endpoint(m) << std::endl;
-
 			boost::asio::ip::udp::endpoint destination(boost::asio::ip::address::from_string(get_endpoint(m)), UDP_RX_PORT);
 			comm_socket.send_to(boost::asio::buffer(get_packet(m).bytestream(), get_packet(m).size()), destination);
 			outgoing_msg->pop();
 		}
 
-		// Sleep is necessary - this is every 1ms
-		usleep(1000);
+		// Sleep is necessary - this is every 100ms
+		usleep(100000);
 	}
-
-	std::cout << "Deinitializing Sender..." << std::endl;
-
-	*is_active = true;
 
 	pthread_exit(nullptr);
 }
@@ -135,15 +119,15 @@ void Communicator::kill()
 	if(this->rx_active)
 	{
 		this->rx_active = false;
-		while(!this->rx_active);
-		this->rx_active = false;
+		usleep(100000);
+		pthread_cancel(this->thread_recv);
+		pthread_join(this->thread_recv, nullptr);
 	}
 
 	if(this->tx_active)
 	{
 		this->tx_active = false;
-		while(!this->tx_active);
-		this->tx_active = false;
+		pthread_join(this->thread_trans, nullptr);
 	}
 }
 

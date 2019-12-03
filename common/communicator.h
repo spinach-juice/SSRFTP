@@ -2,7 +2,7 @@
 #define __COMMUNICATOR__H__
 
 #define UDP_RX_PORT 13
-#define UDP_TX_PORT 14
+#define UDP_TX_PORT 49197
 
 #include "packet.h"
 #include <string>
