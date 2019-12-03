@@ -35,6 +35,7 @@ Packet build_file_shard(unsigned long const shard_num, unsigned short const tran
 Packet build_shard_end(unsigned short const trans_id);
 Packet build_shard_request(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned long const num_missing_shards);
 Packet build_transfer_complete(unsigned short const trans_id, bool const success_state);
+Packet build_shard_request_range(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned short const num_missing_shards, unsigned long const * const missing_ranges, unsigned short const num_missing_ranges);
 
 
 
