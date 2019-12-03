@@ -137,9 +137,14 @@ void server::start_server()
             else
             {
                 cout << "Transfer Complete!" << endl << endl;
-                 transfer_complete = true;
+                transfer_complete = true;
+                
+                sleep(100000);
+                //send request complete packet
+                
             }
 
+            sleep(200);
         } 
     }
     

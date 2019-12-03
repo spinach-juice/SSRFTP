@@ -39,6 +39,8 @@ vector<unsigned long> ShardChecker::verifyShards()
     fstream in;
     vector<unsigned long> miss_shrd;
     
+    this->extractClientStartPacket();
+    
     for(unsigned long i = 0; i < num_shards; num_shards++)
     {
         string filename = "shard/" + i;
