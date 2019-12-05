@@ -25,7 +25,7 @@ Packet::Packet(const Packet& p)
 
 Packet::~Packet()
 {
-	delete this->data;
+	delete[] this->data;
 }
 
 bool operator==(Packet& p1, Packet& p2)
@@ -137,7 +137,7 @@ Packet build_client_start(char const * const md5_chksum, unsigned long long cons
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete bytes;
+	delete[] bytes;
 	return p;
 }
 
@@ -163,7 +163,7 @@ Packet build_file_shard(unsigned long const shard_num, unsigned short const tran
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete bytes;
+	delete[] bytes;
 	return p;
 }
 
@@ -221,8 +221,8 @@ Packet build_shard_request(unsigned short const trans_id, unsigned long const * 
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete ordered_shards;
-	delete bytes;
+	delete[] ordered_shards;
+	delete[] bytes;
 	return p;
 }
 
@@ -262,7 +262,7 @@ Packet build_shard_request_range(unsigned short const trans_id, unsigned long co
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete bytes;
+	delete[] bytes;
 	return p;
 
 }
