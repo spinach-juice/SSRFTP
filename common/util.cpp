@@ -60,13 +60,19 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 	return true;
 }
 
-void MD5(char* file_path, char* file_checksum)
+void MD5(char const * const file_path, char* file_checksum)
 {
 	std::string cmd = (std::string)"md5sum " + file_path;
-	std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
-	if(!pipe)
+
+	FILE* run_cmd = popen(cmd.c_str(), "r");
+	if(run_cmd == nullptr)
 		throw std::runtime_error("Could not retrieve md5 checksum from file");
-	file_path = fgets(file_checksum, 32, pipe.get());
+
+	size_t readsize = fread(file_checksum, sizeof(char), 32, run_cmd);
+
+	cmd += readsize; // this line is completely unnecessary, just makes the compiler shut up about unused variable readsize which makes it shut up about unused result on fread
+
+	pclose(run_cmd);
 }
 
 
