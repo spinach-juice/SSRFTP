@@ -22,7 +22,6 @@ Communicator com;
 
 int main(int argc, char** argv)
 {
-	std::vector<Packet> full_shard_Packet;
 	
 	std::ifstream file;	
 	unsigned long long fileSize;
@@ -52,10 +51,8 @@ int main(int argc, char** argv)
 	char buffer[fileSize];
 	getFileContents(file,fileSize, buffer);
 	
-	//std::cout << file_checksum[2] << std::endl;
 	MD5("/home/adam/Desktop/Senior_Design/SSRFTP/client/sendFile",file_checksum); 
 	
-	//std::cout << file_checksum[2] << std::endl;
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
 	
 	com.start();
@@ -69,6 +66,7 @@ int main(int argc, char** argv)
 				state = 1;
 		}
 		com.send_message(package_message(start_packet,"151.159.105.136"));
+		usleep(1000000);
 	} 
 	
 	
@@ -78,7 +76,7 @@ int main(int argc, char** argv)
 	for(int i = 0; i< (int)shard_num; i++)
 	{
 		
-		file.read(data, sizeof(data-1));
+		file.read(data, sizeof(data));
 		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
 		shardPackets.push_back(current);
 	}
@@ -88,9 +86,9 @@ int main(int argc, char** argv)
 
 	//wait for the server to send the request packet
 	
-	while(com.message_available())
+	while(!com.message_available())
 	{
-		usleep(1);
+		usleep(1000000);
 	}
 
 	Message m = com.read_message();
@@ -98,36 +96,43 @@ int main(int argc, char** argv)
 	
 	unsigned long missing_shards[shard_num];
 	unsigned long  num_missing_shards;
+	std::vector<Packet> new_shardPackets;
+
+	//this will need to be implemented into a function later
+	//to 1)clean up main 2)the have steps in process be defined
 	
-	full_shard_Packet = shardPackets;
-	interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
-
- 	std::vector<Packet> new_shardPackets;
-
-	//change the packets that are being sent to only the ones we need
-	for(int i = 0; i < (int)num_missing_shards;i++)
-		new_shardPackets.push_back(shardPackets[missing_shards[i]]);
-
-	shardPackets = new_shardPackets;
-	
-	state_change = 0; 
-	pthread_create(&send_loop, nullptr,send,nullptr);
-	pthread_create(&receive_loop,nullptr,receive, nullptr);
+	bool transferComplete = false;
 	bool success_state = true;
-
-	Packet transfer_complete  = build_transfer_complete(/*trasmittion id*/5, success_state);
-	
-	while(!state_change)
+	while(!transferComplete)
 	{
-		if(com.message_available())
+		interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
+		Packet transfer_complete_packet  = build_transfer_complete(/*trasmittion id*/5, success_state);
+
+	 	
+		//change the packets that are being sent to only the ones we need
+		for(int i = 0; i < (int)num_missing_shards;i++)
+			new_shardPackets.push_back(shardPackets[missing_shards[i]]);
+
+		shardPackets = new_shardPackets;
+		
+		state_change = 0; 
+		pthread_create(&send_loop, nullptr,send,nullptr);
+		pthread_create(&receive_loop,nullptr,receive, nullptr);
+		
+
+		
+		
+		while(!state_change)
 		{
-			Message m = com.read_message();
-			if(m.first == transfer_complete)
-				state = 1;
+			usleep(1000000);
 		}
-	
+		
+		Message m = com.read_message();
+		if(m.first == transfer_complete_packet)
+			transferComplete = true;
+		else 
+			new_shardPackets.clear();
 	}
-	
 	
   	return 0;
 }
@@ -139,8 +144,10 @@ void* send(void* args)
 	while(!state_change)
 	{
 		for(int i = 0; i < (int)sizeof(shardPackets); i++)
+		{
 			com.send_message(package_message(shardPackets[i],"151.159.105.136"));
-		
+			usleep(10000);
+		}
 	}
 		
 
