@@ -12,6 +12,7 @@
 #include "util.h"
 #include "tcp_listener.h"
 
+
 unsigned long const DataPerPacket = 1024;
 
 int state = 0; 
@@ -23,20 +24,22 @@ int main(int argc, char** argv)
 {
 	std::vector<Packet> full_shard_Packet;
 	
-	std::ifstream* file;	
+	std::ifstream file;	
 	unsigned long long fileSize;
 	unsigned long shard_num;
 	unsigned short trans_id = 0;
-	char const* destination_path = "/Desktop/Senior Design/SSRFTP/client/testfile";
+	char const* destination_path = "";
 	unsigned short path_length = 45;
 	pthread_t send_loop;
 	pthread_t receive_loop;
 	
-	tcpListener full_file;
-	full_file.Listen();
-	file = &full_file.getPath();
+	//implement rest here
+	//tcpListener full_file;
+	//full_file.Listen();
+	//file = &full_file.getPath();
 	
-	
+	file.open("sendfile");	
+
 	fileSize = getFileSize(file);
 	
 	shard_num = fileSize/DataPerPacket;
@@ -46,15 +49,16 @@ int main(int argc, char** argv)
 
 	//assume that this works for now
 	char file_checksum[33]; 
-	char buffer[fileSize + 1];
+	char buffer[fileSize];
 	getFileContents(file,fileSize, buffer);
 	
+	//std::cout << file_checksum[2] << std::endl;
+	MD5("Desktop/Senior_Design/SSRFTP/client/sendfile",file_checksum); 
 	
-	MD5(buffer,file_checksum); 
-
-
+	//std::cout << file_checksum[2] << std::endl;
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
-
+	
+	std::cout << "Here" << std::endl;
 
 	com.start();
 	
@@ -66,9 +70,8 @@ int main(int argc, char** argv)
 			if(m.first == start_packet)
 				state = 1;
 		}
-	
-		com.send_message(package_message(start_packet,""));
-	}
+		com.send_message(package_message(start_packet,"151.159.105.136"));
+	} 
 	
 	
 	char data[DataPerPacket];
@@ -77,7 +80,7 @@ int main(int argc, char** argv)
 	for(int i = 0; i< (int)shard_num; i++)
 	{
 		
-		file->read(data, sizeof(data-1));
+		file.read(data, sizeof(data-1));
 		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
 		shardPackets.push_back(current);
 	}
@@ -86,6 +89,7 @@ int main(int argc, char** argv)
 	pthread_create(&receive_loop,nullptr,receive, nullptr);
 
 	//wait for the server to send the request packet
+	
 	while(com.message_available())
 	{
 		usleep(1);
@@ -137,7 +141,7 @@ void* send(void* args)
 	while(!state_change)
 	{
 		for(int i = 0; i < (int)sizeof(shardPackets); i++)
-			com.send_message(package_message(shardPackets[i],""));
+			com.send_message(package_message(shardPackets[i],"151.159.105.136"));
 		
 	}
 		

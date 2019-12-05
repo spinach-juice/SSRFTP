@@ -69,14 +69,6 @@ void MD5(char* file_path, char* file_checksum)
 	file_path = fgets(file_checksum, 32, pipe.get());
 }
 
-unsigned long long getFileSize(std::ifstream* file)
-{
-	unsigned long long fileSize;
-
-	file->seekg(0,file->end);
-	fileSize = file->tellg();
-	return fileSize;
-}
 
 bool schar_array_equal(char const * const a, char const * const b, unsigned int size)
 {
@@ -169,12 +161,23 @@ std::vector<unsigned long> ulong_array_singles(unsigned long const * const array
 
 	return singles;
 }
-void getFileContents(std::ifstream* file,unsigned long long fileSize, char *buffer)
+
+unsigned long long getFileSize(std::ifstream& file)
 {
-	char temp[fileSize +1];
-	file->read(temp, fileSize);
+	unsigned long long fileSize;
+
+	file.seekg(0,file.end);
+	fileSize = file.tellg();
+	return fileSize;
+}
+void getFileContents(std::ifstream& file,unsigned long long fileSize, char* buffer)
+{
+	char temp[fileSize];
 	
-	strncpy(buffer, temp,fileSize);
+	file.seekg(0,file.beg);
+	file.read(buffer, fileSize);
+	
+	//strncpy(buffer, temp,fileSize);
 	
 }
 
