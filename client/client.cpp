@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 	getFileContents(file,fileSize, buffer);
 	
 	//std::cout << file_checksum[2] << std::endl;
-	MD5("Desktop/Senior_Design/SSRFTP/client/sendfile",file_checksum); 
+	MD5("/home/adam/Desktop/Senior_Design/SSRFTP/client/sendfile",file_checksum); 
 	
 	//std::cout << file_checksum[2] << std::endl;
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
