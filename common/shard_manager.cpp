@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdio>
 #include <stdexcept>
+#include <iostream>
 
 ShardManager::ShardManager(char const * const filename, unsigned short const trans_id)
 {
@@ -54,7 +55,43 @@ ShardManager::ShardManager(const ShardManager& copy)
 
 ShardManager::~ShardManager()
 {
+	if(this->return_array != nullptr)
+		delete[] this->return_array;
+
 	// Collate all shards into final file here
+	FILE* output_file = fopen(this->attached_file, "w");
+	if(output_file == nullptr)
+	{
+		std::cerr << "ShardManager could not write shards to output file\r\n";
+		return;
+	}
+
+	for(unsigned long i = 0; i < this->shard_max + 1; i++)
+	{
+		char filename[40] = {0};
+		sprintf(filename, "fs%utr%u.ssrftp", (unsigned int)i, (unsigned int)this->transfer_id);
+		FILE* shard_file = fopen(filename, "r");
+		if(shard_file == nullptr)
+		{
+			std::cerr << "ShardManager missing shard it thought it had\r\n";
+			fclose(output_file);
+			return;
+		}
+
+		unsigned short shard_size = (unsigned short)fread(this->shard_data, 1, SHARD_SIZE_MAX, shard_file);
+		fclose(shard_file);
+
+		unsigned short written_size = (unsigned short)fwrite(this->shard_data, 1, shard_size, output_file);
+		if(shard_size != written_size)
+		{
+			std::cerr << "ShardManager could not write shards to output file\r\n";
+			fclose(output_file);
+			return;
+		}
+	}
+
+
+	fclose(output_file);
 }
 
 unsigned long ShardManager::num_shards()
@@ -263,7 +300,7 @@ unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 	num_singles = (unsigned long)this->shard_singles.size();
 
 	if(this->return_array != nullptr)
-		delete this->return_array;
+		delete[] this->return_array;
 	this->return_array = new unsigned long[num_singles];
 
 	for(unsigned long i = 0; i < num_singles; i++)
@@ -277,7 +314,7 @@ unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 	num_ranges = (unsigned long)this->shard_ranges.size() / 2;
 
 	if(this->return_array != nullptr)
-		delete this->return_array;
+		delete[] this->return_array;
 	this->return_array = new unsigned long[num_ranges * 2];
 
 	for(unsigned long i = 0; i < num_ranges * 2; i++)
@@ -346,7 +383,7 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 
 	// write shard to a shard file
 	
-	char filename[30] = {0};
+	char filename[40] = {0};
 	sprintf(filename, "fs%utr%u.ssrftp", (unsigned int)shard_num, (unsigned int)this->transfer_id);
 
 	FILE* open_file = fopen(filename, "w");
