@@ -28,8 +28,8 @@ int main(int argc, char** argv)
 	unsigned long long fileSize;
 	unsigned long shard_num;
 	unsigned short trans_id = 0;
-	char const* destination_path = "";
-	unsigned short path_length = 45;
+	char const* destination_path = "file";
+	unsigned short path_length = 4;
 	pthread_t send_loop;
 	pthread_t receive_loop;
 	
@@ -53,13 +53,11 @@ int main(int argc, char** argv)
 	getFileContents(file,fileSize, buffer);
 	
 	//std::cout << file_checksum[2] << std::endl;
-	MD5("/home/adam/Desktop/Senior_Design/SSRFTP/client/sendfile",file_checksum); 
+	MD5("/home/adam/Desktop/Senior_Design/SSRFTP/client/sendFile",file_checksum); 
 	
 	//std::cout << file_checksum[2] << std::endl;
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
 	
-	std::cout << "Here" << std::endl;
-
 	com.start();
 	
 	while(state == 0)
