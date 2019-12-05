@@ -30,7 +30,7 @@ public:
 	void finalize();
 
 private:
-	char[260] attached_file;
+	char attached_file[260];
 	unsigned long shard_max;
 	std::vector<unsigned long> shard_ranges;
 	std::vector<unsigned long> shard_singles;

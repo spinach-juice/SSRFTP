@@ -34,8 +34,6 @@ ShardManager::ShardManager(char const * const filename, unsigned long const num_
 	strcpy(this->attached_file, filename);
 
 	this->shard_max = num_shards;
-	this->shard_ranges.push_back(0);
-	this->shard_ranges.push_back(shard_max);
 }
 
 ShardManager::ShardManager(const ShardManager& copy)
@@ -74,12 +72,12 @@ unsigned char* ShardManager::get_shard_data(unsigned long const shard_num, unsig
 
 void ShardManager::remove_shard(unsigned long const shard_num)
 {
-	if(!this->shard_available())
+	if(!this->shard_available(shard_num) || this->fill_mode)
 		return;
 
 	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
 	{
-		if(this->shard_singles.at(i) == shard_num);
+		if(this->shard_singles.at(i) == shard_num)
 		{
 			this->shard_singles.erase(this->shard_singles.begin() + i);
 			return;
@@ -109,6 +107,16 @@ void ShardManager::remove_shard(unsigned long const shard_num)
 			}
 			return;
 		}
+		else if(this->shard_ranges.at(i) == shard_num)
+		{
+			this->shard_ranges.at(i)--;
+			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
+			{
+				this->shard_singles.push_back(shard_num - 1);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i);
+			}
+			return;
+		}
 
 		i++;
 	}
@@ -126,7 +134,118 @@ void ShardManager::remove_shard(unsigned long const shard_num)
 
 void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned long const upper_bound)
 {
+	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
+		if(this->shard_singles.at(i) >= lower_bound && this->shard_singles.at(i) <= upper_bound)
+			this->shard_singles.erase(this->shard_singles.begin() + i);
 
+	unsigned long first_inside = 0;
+	while(first_inside < this->shard_ranges.size() && this->shard_ranges.at(first_inside) < lower_bound)
+		first_inside++;
+
+	if(first_inside == this->shard_ranges.size())
+		return;
+
+	unsigned long last_inside = shard_ranges.size() - 1;
+	while(last_inside != ((unsigned long)0) - 1 && this->shard_ranges.at(last_inside) > upper_bound)
+		last_inside--;
+
+	if(last_inside == ((unsigned long)0) - 1)
+		return;
+
+	if(first_inside & 1) // first range bound inside given range is an upper bound
+	{
+		if(last_inside & 1) // last range bound inside given range is an upper bound
+		{
+			if(first_inside == last_inside) // range contains only this upper bound
+			{
+				this->shard_ranges.at(first_inside) = lower_bound - 1;
+				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(first_inside - 1))
+				{
+					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside);
+				}
+			}
+			else // range spans multiple internal ranges
+			{
+				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside);
+				this->shard_ranges.at(first_inside) = lower_bound - 1;
+				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(first_inside - 1))
+				{
+					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside);
+				}
+			}
+		}
+		else // last range bound inside given range is a lower bound
+		{
+			if(first_inside > last_inside) // range is inside an internal range entirely
+			{
+				this->shard_ranges.insert(this->shard_ranges.begin() + first_inside, upper_bound + 1);
+				this->shard_ranges.insert(this->shard_ranges.begin() + first_inside, lower_bound - 1);
+				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(last_inside))
+				{
+					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
+					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + first_inside);
+				}
+				if(this->shard_ranges.at(first_inside + 1) == this->shard_ranges.at(first_inside + 2))
+				{
+					this->shard_singles.push_back(this->shard_ranges.at(first_inside + 1));
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + first_inside + 2);
+				}
+			}
+			else // range is between two or more internal ranges
+			{
+				if(first_inside + 1 < last_inside)
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside - 1);
+
+				last_inside = first_inside + 1;
+				this->shard_ranges.at(first_inside) = lower_bound - 1;
+				this->shard_ranges.at(last_inside) = upper_bound + 1;
+				if(this->shard_ranges.at(first_inside - 1) == lower_bound - 1)
+				{
+					this->shard_singles.push_back(lower_bound - 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside);
+				}
+				if(this->shard_ranges.at(last_inside + 1) == upper_bound + 1)
+				{
+					this->shard_singles.push_back(upper_bound + 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + last_inside + 1);
+				}
+			}
+		}
+	}
+	else // first range bound inside given range is a lower bound
+	{
+		if(last_inside & 1) // last range bound inside given range is an upper bound
+		{
+			if(last_inside > first_inside) // range is inside 1 or more internal ranges
+			{
+				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside);
+			}
+		}
+		else // last range bound inside given range is a lower bound
+		{
+			if(last_inside == first_inside) // only member in range is this lower bound
+			{
+				this->shard_ranges.at(first_inside) = upper_bound + 1;
+				if(this->shard_ranges.at(first_inside + 1) == upper_bound + 1)
+				{
+					this->shard_singles.push_back(upper_bound + 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 1);
+				}
+			}
+			else
+			{
+				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside - 1);
+				this->shard_ranges.at(first_inside) = upper_bound + 1;
+				if(this->shard_ranges.at(first_inside + 1) == upper_bound + 1)
+				{
+					this->shard_singles.push_back(upper_bound + 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 1);
+				}
+			}
+		}
+	}
 }
 
 unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
