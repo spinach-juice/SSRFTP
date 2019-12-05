@@ -113,7 +113,7 @@ void Packet::replace_checksum()
 Packet build_client_start(char const * const md5_chksum, unsigned long long const file_size, unsigned long const num_shards, unsigned short const trans_id, char const * const destination_path, unsigned short const path_length)
 {
 	unsigned short packet_length = path_length + 32;
-	unsigned char* bytes = new unsigned char[packet_length];
+	unsigned char* bytes = new unsigned char[packet_length + 1];
 	bytes[0] = bytes[1] = 0x00;
 	bytes[2] = (unsigned char)(packet_length >> 8);
 	bytes[3] = (unsigned char)(packet_length & 0x00ff);
@@ -144,7 +144,7 @@ Packet build_client_start(char const * const md5_chksum, unsigned long long cons
 Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, unsigned char const * const shard_data, unsigned short const data_size)
 {
 	unsigned short packet_length = data_size + 11;
-	unsigned char* bytes = new unsigned char[packet_length];
+	unsigned char* bytes = new unsigned char[packet_length + 1];
 	bytes[0] = 0x00;
 	bytes[1] = 0x01;
 	bytes[2] = (unsigned char)(packet_length >> 8);
@@ -224,6 +224,47 @@ Packet build_shard_request(unsigned short const trans_id, unsigned long const * 
 	delete ordered_shards;
 	delete bytes;
 	return p;
+}
+
+Packet build_shard_request_range(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned short const num_missing_shards, unsigned long const * const missing_ranges, unsigned short const num_missing_ranges)
+{
+	unsigned long i = 0;
+
+	unsigned short packet_length = 11 + 4 * (num_missing_shards + (2 * num_missing_ranges));
+
+	unsigned char * bytes = new unsigned char[packet_length + 1];
+	bytes[0] = 0x00;
+	bytes[1] = 0x03;
+	bytes[2] = (unsigned char)((packet_length & 0xff00) >> 8);
+	bytes[3] = (unsigned char)(packet_length & 0x00ff);
+	bytes[6] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[7] = (unsigned char)(trans_id & 0x00ff);
+	bytes[8] = (unsigned char)((num_missing_shards & 0xff00) >> 8);
+	bytes[9] = (unsigned char)(num_missing_shards & 0x00ff);
+	bytes[10] = (unsigned char)(((num_missing_ranges) & 0xff00) >> 8);
+	bytes[11] = (unsigned char)((num_missing_ranges) & 0x00ff);
+	for(i = 0; i < num_missing_shards; i++)
+	{
+		bytes[12 + (4 * i)] = (unsigned char)((missing_shards[i] & 0xff000000) >> 24);
+		bytes[13 + (4 * i)] = (unsigned char)((missing_shards[i] & 0x00ff0000) >> 16);
+		bytes[14 + (4 * i)] = (unsigned char)((missing_shards[i] & 0x0000ff00) >> 8);
+		bytes[15 + (4 * i)] = (unsigned char)(missing_shards[i] & 0x000000ff);
+	}
+	unsigned short offset = 12 + (4 * i);
+	for(i = 0; i < num_missing_ranges; i++)
+	{
+		bytes[offset + (4 * i)] = (unsigned char)((missing_ranges[i] & 0xff000000) >> 24);
+		bytes[offset + 1 + (4 * i)] = (unsigned char)((missing_ranges[i] & 0x00ff0000) >> 16);
+		bytes[offset + 2 + (4 * i)] = (unsigned char)((missing_ranges[i] & 0x0000ff00) >> 8);
+		bytes[offset + 3 + (4 * i)] = (unsigned char)(missing_ranges[i] & 0x000000ff);
+	}
+
+	Packet p(bytes);
+	p.replace_checksum();
+
+	delete bytes;
+	return p;
+
 }
 
 Packet build_transfer_complete(unsigned short const trans_id, bool const success_state)
