@@ -34,7 +34,8 @@ private:
 	unsigned short transfer_id;
 	bool fill_mode;
 
-	unsigned long* return_array;
+	unsigned long* range_array;
+	unsigned long* single_array;
 };
 
 #endif
