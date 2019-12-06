@@ -358,6 +358,34 @@ bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long*
 	return p.verify_checksum();
 }
 
+bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long> missing_singles, std::vector<unsigned long> missing_ranges)
+{
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x03 || p.size() < 10)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+	unsigned short num_singles = (((unsigned short)(p.bytestream()[8])) << 8) | ((unsigned short)(p.bytestream()[9]));
+	unsigned short num_ranges = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+
+	unsigned long i = 12;
+	unsigned long num_missing_shards = 0;
+	for(; num_missing_shards < num_singles; num_missing_shards++, i+=4)
+	{
+		missing_singles[num_missing_shards] = (((unsigned long)(p.bytestream()[i])) << 24) | (((unsigned long)(p.bytestream()[i+1])) << 16) | (((unsigned long)(p.bytestream()[i+2])) << 8) | ((unsigned long)(p.bytestream()[i+3]));
+	}
+
+	unsigned short j = 0;
+	for(; j < num_ranges; j++, i+=8)
+	{
+		unsigned long range_start = (((unsigned long)(p.bytestream()[i])) << 24) | (((unsigned long)(p.bytestream()[i+1])) << 16) | (((unsigned long)(p.bytestream()[i+2])) << 8) | ((unsigned long)(p.bytestream()[i+3]));
+		unsigned long range_end = (((unsigned long)(p.bytestream()[i+4])) << 24) | (((unsigned long)(p.bytestream()[i+5])) << 16) | (((unsigned long)(p.bytestream()[i+6])) << 8) | ((unsigned long)(p.bytestream()[i+7]));
+		missing_ranges[2 * j] = range_start;
+		missing_ranges[(2 * j) + 1] = range_end;
+	}
+
+	return p.verify_checksum();
+}
+
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x04 || p.size() != 9)
