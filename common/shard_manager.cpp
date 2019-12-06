@@ -115,7 +115,7 @@ ShardManager::~ShardManager()
 		}
 
 		// delete shard file
-		//remove(filename);
+		remove(filename);
 	}
 
 
@@ -172,16 +172,17 @@ void ShardManager::remove_shard(unsigned long const shard_num)
 			this->shard_ranges.at(i) = shard_num - 1;
 			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, next_range_end);
 			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, shard_num + 1);
-			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
-			{
-				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i);
-			}
 			if(this->shard_ranges.at(i + 1) == this->shard_ranges.at(i + 2))
 			{
 				this->shard_singles.push_back(shard_num + 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i + 1, this->shard_ranges.begin() + i + 2);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i + 1, this->shard_ranges.begin() + i + 3);
 			}
+			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
+			{
+				this->shard_singles.push_back(shard_num - 1);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
+			}
+
 			return;
 		}
 		else if(this->shard_ranges.at(i) == shard_num)
@@ -190,7 +191,7 @@ void ShardManager::remove_shard(unsigned long const shard_num)
 			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
 			{
 				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
 			}
 			return;
 		}
@@ -204,7 +205,7 @@ void ShardManager::remove_shard(unsigned long const shard_num)
 		if(this->shard_ranges.at(i) == this->shard_ranges.at(i + 1))
 		{
 			this->shard_singles.push_back(shard_num + 1);
-			this->shard_ranges.erase(this->shard_ranges.begin() + i, this->shard_ranges.begin() + i + 1);
+			this->shard_ranges.erase(this->shard_ranges.begin() + i, this->shard_ranges.begin() + i + 2);
 		}
 	}
 }
@@ -242,17 +243,17 @@ void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned 
 				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(first_inside - 1))
 				{
 					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside + 1);
 				}
 			}
 			else // range spans multiple internal ranges
 			{
-				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside);
+				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside + 1);
 				this->shard_ranges.at(first_inside) = lower_bound - 1;
 				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(first_inside - 1))
 				{
 					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside + 1);
 				}
 			}
 		}
@@ -265,18 +266,18 @@ void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned 
 				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(last_inside))
 				{
 					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
-					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + first_inside);
+					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + first_inside + 1);
 				}
 				if(this->shard_ranges.at(first_inside + 1) == this->shard_ranges.at(first_inside + 2))
 				{
 					this->shard_singles.push_back(this->shard_ranges.at(first_inside + 1));
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + first_inside + 2);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + first_inside + 3);
 				}
 			}
 			else // range is between two or more internal ranges
 			{
 				if(first_inside + 1 < last_inside)
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside - 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside);
 
 				last_inside = first_inside + 1;
 				this->shard_ranges.at(first_inside) = lower_bound - 1;
@@ -284,12 +285,12 @@ void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned 
 				if(this->shard_ranges.at(first_inside - 1) == lower_bound - 1)
 				{
 					this->shard_singles.push_back(lower_bound - 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside + 1);
 				}
 				if(this->shard_ranges.at(last_inside + 1) == upper_bound + 1)
 				{
 					this->shard_singles.push_back(upper_bound + 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + last_inside + 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + last_inside + 2);
 				}
 			}
 		}
@@ -300,7 +301,7 @@ void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned 
 		{
 			if(last_inside > first_inside) // range is inside 1 or more internal ranges
 			{
-				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside);
+				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside + 1);
 			}
 		}
 		else // last range bound inside given range is a lower bound
@@ -311,17 +312,17 @@ void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned 
 				if(this->shard_ranges.at(first_inside + 1) == upper_bound + 1)
 				{
 					this->shard_singles.push_back(upper_bound + 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 2);
 				}
 			}
 			else
 			{
-				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside - 1);
+				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside);
 				this->shard_ranges.at(first_inside) = upper_bound + 1;
 				if(this->shard_ranges.at(first_inside + 1) == upper_bound + 1)
 				{
 					this->shard_singles.push_back(upper_bound + 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 1);
+					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 2);
 				}
 			}
 		}
@@ -372,6 +373,7 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 		if(this->shard_singles.at(i) == shard_num)
 		{
 			this->shard_singles.erase(this->shard_singles.begin() + i);
+			i--;
 		}
 	}
 
@@ -386,15 +388,15 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 			this->shard_ranges.at(i) = shard_num - 1;
 			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, next_range_end);
 			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, shard_num + 1);
-			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
-			{
-				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i);
-			}
 			if(this->shard_ranges.at(i + 1) == this->shard_ranges.at(i + 2))
 			{
 				this->shard_singles.push_back(shard_num + 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i + 1, this->shard_ranges.begin() + i + 2);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i + 1, this->shard_ranges.begin() + i + 3);
+			}
+			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
+			{
+				this->shard_singles.push_back(shard_num - 1);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
 			}
 		}
 		else if(this->shard_ranges.at(i) == shard_num)
@@ -403,20 +405,20 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
 			{
 				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i);
+				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
 			}
 		}
 
 		i++;
 	}
 
-	if(i < shard_ranges.size() && this->shard_ranges.at(i) == shard_num)
+	if(i < this-> shard_ranges.size() && this->shard_ranges.at(i) == shard_num)
 	{
 		this->shard_ranges.at(i) = shard_num + 1;
 		if(this->shard_ranges.at(i) == this->shard_ranges.at(i + 1))
 		{
 			this->shard_singles.push_back(shard_num + 1);
-			this->shard_ranges.erase(this->shard_ranges.begin() + i, this->shard_ranges.begin() + i + 1);
+			this->shard_ranges.erase(this->shard_ranges.begin() + i, this->shard_ranges.begin() + i + 2);
 		}
 	}
 
