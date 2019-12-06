@@ -2,6 +2,7 @@
 #define __UTIL__H__
 
 #include <vector>
+#include <fstream>
 
 unsigned long long getFileSize(std::ifstream& file);
 void getFileContents(std::ifstream& file,unsigned long long fileSize,char* buffer);

@@ -56,6 +56,13 @@ ShardManager::ShardManager(const ShardManager& copy)
 	strcpy(this->attached_file, copy.attached_file);
 }
 
+ShardManager::ShardManager()
+{
+	this->fill_mode = false;
+	this->shard_max = 0;
+	this->transfer_id = 65535;
+}
+
 ShardManager::~ShardManager()
 {
 	if(this->range_array != nullptr)
@@ -424,4 +431,9 @@ bool ShardManager::shard_available(unsigned long const shard_num)
 bool ShardManager::is_done()
 {
 	return this->shard_ranges.empty() && this->shard_singles.empty();
+}
+
+std::string ShardManager::get_filename()
+{
+	return (std::string)this->attached_file;
 }
