@@ -20,30 +20,41 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 	long file_size = ftell(open_file);
 
 	this->shard_max = (unsigned long)file_size / SHARD_SIZE_MAX;
-	if((unsigned long)file_size % SHARD_SIZE_MAX > 0)
-		this->shard_max++;
+	if((unsigned long)file_size % SHARD_SIZE_MAX == 0)
+		this->shard_max--;
 
 	fclose(open_file);
 
-	this->shard_ranges.push_back(0);
-	this->shard_ranges.push_back(this->shard_max);
+	if(this->shard_max > 0)
+	{
+		this->shard_ranges.push_back(0);
+		this->shard_ranges.push_back(this->shard_max);
+	}
+	else
+		this->shard_singles.push_back(0);
 	this->single_array = nullptr;
 	this->range_array = nullptr;
 	this->transfer_id = trans_id;
+	this->disabled = false;
 }
 
 ShardManager::ShardManager(char const * const filename, unsigned short const trans_id, unsigned long const num_shards)
 {
 	this->fill_mode = true;
 	strcpy(this->attached_file, filename);
+	if(num_shards > 1)
+	{
+		this->shard_ranges.push_back(0);
+		this->shard_ranges.push_back(num_shards - 1);
+	}
+	else
+		this->shard_singles.push_back(0);
 
-	this->shard_ranges.push_back(0);
-	this->shard_ranges.push_back(num_shards);
-
-	this->shard_max = num_shards;
+	this->shard_max = num_shards - 1;
 	this->single_array = nullptr;
 	this->range_array = nullptr;
 	this->transfer_id = trans_id;
+	this->disabled = false;
 }
 
 ShardManager::ShardManager(const ShardManager& copy)
@@ -54,13 +65,12 @@ ShardManager::ShardManager(const ShardManager& copy)
 	this->shard_ranges = copy.shard_ranges;
 	this->transfer_id = copy.transfer_id;
 	strcpy(this->attached_file, copy.attached_file);
+	this->disabled = copy.disabled;
 }
 
 ShardManager::ShardManager()
 {
-	this->fill_mode = false;
-	this->shard_max = 0;
-	this->transfer_id = 65535;
+	this->disabled = true;
 }
 
 ShardManager::~ShardManager()
@@ -69,6 +79,9 @@ ShardManager::~ShardManager()
 		delete[] this->range_array;
 	if(this->single_array != nullptr)
 		delete[] this->single_array;
+
+	if(!this->fill_mode || this->disabled)
+		return;
 
 	// Collate all shards into final file here
 	FILE* output_file = fopen(this->attached_file, "w");
@@ -100,6 +113,9 @@ ShardManager::~ShardManager()
 			fclose(output_file);
 			return;
 		}
+
+		// delete shard file
+		//remove(filename);
 	}
 
 
@@ -108,11 +124,16 @@ ShardManager::~ShardManager()
 
 unsigned long ShardManager::num_shards()
 {
-	return this->shard_max;
+	if(this->disabled)
+		return 0;
+	return this->shard_max + 1;
 }
 
 unsigned char* ShardManager::get_shard_data(unsigned long const shard_num, unsigned short& shard_size)
 {
+	if(this->disabled)
+		return nullptr;
+
 	if(!this->shard_available(shard_num))
 		throw std::runtime_error("Attempted to get data from a shard that does not exist in ShardManager");
 
@@ -190,7 +211,7 @@ void ShardManager::remove_shard(unsigned long const shard_num)
 
 void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned long const upper_bound)
 {
-	if(this->fill_mode)
+	if(this->fill_mode || this->disabled)
 		return;
 
 	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
@@ -309,6 +330,9 @@ void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned 
 
 unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 {
+	if(this->disabled)
+		return nullptr;
+
 	num_singles = (unsigned long)this->shard_singles.size();
 
 	if(this->single_array != nullptr)
@@ -323,6 +347,9 @@ unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 
 unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 {
+	if(this->disabled)
+		return nullptr;
+
 	num_ranges = (unsigned long)this->shard_ranges.size() / 2;
 
 	if(this->range_array != nullptr)
@@ -337,7 +364,7 @@ unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 
 void ShardManager::add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size)
 {
-	if(this->shard_available(shard_num) || !this->fill_mode)
+	if(this->disabled || this->shard_available(shard_num) || !this->fill_mode)
 		return;
 
 	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
@@ -383,7 +410,7 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 		i++;
 	}
 
-	if(this->shard_ranges.at(i) == shard_num)
+	if(i < shard_ranges.size() && this->shard_ranges.at(i) == shard_num)
 	{
 		this->shard_ranges.at(i) = shard_num + 1;
 		if(this->shard_ranges.at(i) == this->shard_ranges.at(i + 1))
@@ -412,6 +439,9 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 
 bool ShardManager::shard_available(unsigned long const shard_num)
 {
+	if(this->disabled)
+		return false;
+
 	bool exists_in_local_range = false;
 
 	for(unsigned int i = 0; i < this->shard_singles.size(); i++)
@@ -423,17 +453,26 @@ bool ShardManager::shard_available(unsigned long const shard_num)
 			exists_in_local_range = true;
 
 	if(this->fill_mode)
-		return exists_in_local_range;
+		return !exists_in_local_range;
 	else
 		return !exists_in_local_range;
 }
 
 bool ShardManager::is_done()
 {
+	if(this->disabled)
+		return false;
 	return this->shard_ranges.empty() && this->shard_singles.empty();
 }
 
 std::string ShardManager::get_filename()
 {
+	if(this->disabled)
+		return "";
 	return (std::string)this->attached_file;
+}
+
+void ShardManager::disable()
+{
+	this->disabled = true;
 }

@@ -29,6 +29,8 @@ public:
 
 	bool is_done();
 
+	void disable();
+
 private:
 	char attached_file[260];
 	unsigned long shard_max;
@@ -40,6 +42,8 @@ private:
 
 	unsigned long* range_array;
 	unsigned long* single_array;
+
+	bool disabled;
 };
 
 #endif

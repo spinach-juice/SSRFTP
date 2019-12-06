@@ -162,9 +162,10 @@ void server::kill()
 #include "packet.h"
 #include <unordered_map>
 #include "util.h"
+#include <iostream>
 
-void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*> md5_sums, Communicator& com)
-{
+void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
+{std::cout << "recieved client start from " << get_endpoint(m) << std::endl;
 	char md5_chk[32];
 	unsigned long long file_size;
 	unsigned long num_shards;
@@ -186,13 +187,15 @@ void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardMan
 
 			manager_map[trans_id] = new_sm;
 			md5_sums[trans_id] = new_md5;
+
+			new_sm.disable(); // prevent duping manager
 		}
 		com.send_message(m);
 	}
 }
 
-void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*> md5_sums, Communicator& com)
-{
+void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
+{std::cout << "recieved file shard" << std::endl;
 	Packet p = get_packet(m);
 	unsigned long shard_num;
 	unsigned short trans_id;
@@ -201,7 +204,7 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 
 	if(interpret_file_shard(p, shard_num, trans_id, shard_data, shard_size))
 	{
-		if(!manager_map[trans_id].shard_available(shard_num))
+		if(!(manager_map[trans_id].shard_available(shard_num)))
 		{
 			manager_map[trans_id].add_shard(shard_num, shard_data, shard_size);
 			if(manager_map[trans_id].is_done())
@@ -209,7 +212,7 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 				std::string filename = manager_map[trans_id].get_filename();
 				manager_map.erase(trans_id);
 
-				char md5_chk[32];
+				char md5_chk[33] = {0};
 				MD5(filename.c_str(), md5_chk);
 
 				bool success_state;
@@ -221,13 +224,15 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 				Packet response = build_transfer_complete(trans_id, success_state);
 
 				Message msg_response = package_message(response, get_endpoint(m));
+
+				com.send_message(msg_response);
 			}
 		}
 	}
 }
 
-void handle_transfer_complete(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*> md5_sums, Communicator& com)
-{
+void handle_transfer_complete(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
+{std::cout << "recieved transfer complete" << std::endl;
 }
 
 int main()
