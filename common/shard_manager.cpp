@@ -455,7 +455,7 @@ bool ShardManager::shard_available(unsigned long const shard_num)
 	if(this->fill_mode)
 		return !exists_in_local_range;
 	else
-		return !exists_in_local_range;
+		return exists_in_local_range;
 }
 
 bool ShardManager::is_done()

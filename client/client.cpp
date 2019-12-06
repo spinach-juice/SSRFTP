@@ -39,8 +39,8 @@ int main(int argc, char** argv)
 	long file_size = ftell(open_file);
 	fclose(open_file);
 
-	unsigned long tot_shards = (unsigned long)file_size / 65524;
-	if((unsigned long)file_size % 65524)
+	unsigned long tot_shards = (unsigned long)file_size / 65495;
+	if((unsigned long)file_size % 65495)
 		tot_shards++;
 
 	unsigned short trans_id = 1337;
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
 	char md5_chk[33] = {0};
 	MD5(file_to_transfer, md5_chk);
-
+	std::cout << "client start packet:\nmd5 = " << md5_chk << "\nfile size = " << file_size << "\nnumber of shards = " << tot_shards << "\ntrans id = " << trans_id << "\nfile being transferred = " << file_to_transfer << std::endl;
 	Packet client_start = build_client_start(md5_chk, file_size, tot_shards, trans_id, file_to_transfer, path_length);
 
 	Communicator com;

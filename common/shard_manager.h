@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#define SHARD_SIZE_MAX 65524
+#define SHARD_SIZE_MAX 65495
 
 class ShardManager
 {
