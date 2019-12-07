@@ -15,7 +15,7 @@ class ShardChecker
 private:
     
     // client start packet data
-    char* md5_chksum = nullptr;
+    char md5_chksum[33] = {0};
     unsigned long num_shards;
   
 

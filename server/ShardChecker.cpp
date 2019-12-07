@@ -17,15 +17,20 @@ bool ShardChecker::extractClientStartPacket()
     }
     
     try{
+    
         // get the md5_chksum
-        in.getline(md5_chksum, 128);
+        in.getline(md5_chksum, 33);
         
-        // skip 11 bits (the filesize entry + \n);
-        in.seekg(10, ios::cur);
+        in >> num_shards;
+        //in.getline((char*)&num_shards, 4);
         
-        char* temp;
-        in.getline(temp, 10);
-        num_shards = atoi(temp);
+        //Debug
+        cout << "md5chksum: " << md5_chksum << endl;
+        cout << "Number of shards: " << num_shards << endl;
+        //end-dbg   
+        
+        in.close();
+        
     }catch(...){
         cout << "Exception occured while trying to extract data from Client"
             << " Start Packet" << endl;
@@ -39,7 +44,10 @@ vector<unsigned long> ShardChecker::verifyShards()
     fstream in;
     vector<unsigned long> miss_shrd;
     
-    this->extractClientStartPacket();
+    if(!this->extractClientStartPacket())   
+    // debug
+       cout << "Could not open client start packet for checking" << endl; 
+   // enddbg
     
     for(unsigned long i = 0; i < num_shards; num_shards++)
     {
@@ -50,6 +58,10 @@ vector<unsigned long> ShardChecker::verifyShards()
         if(!in.is_open())
             miss_shrd.push_back(i);
     }   
+    
+   //Debug
+   cout << "Size of vector after check: " << miss_shrd.size() << endl << endl; 
+   // end-dbg     
             
    return miss_shrd;
 }

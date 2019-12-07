@@ -14,7 +14,7 @@
 #include <boost/asio.hpp>
 #include "packet.h"
 #include "communicator.h"
-#include "ShardChecker.h"
+#include "shard_manager.h"
 
 using boost::asio::ip::udp;
 
@@ -38,9 +38,7 @@ private:
     std::queue<Message> send_buff;
     
     bool* shard_request_checker;
-    
-    Communicator* server_comm;
-    
+        
     std::ofstream file;
     
 public:   
@@ -50,7 +48,7 @@ public:
     
     void start_server();
     //void send();
-    void kill();
+    //void kill();
 
 };
 

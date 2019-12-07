@@ -16,7 +16,7 @@ void* reciever_main_loop(void* args)
 	boost::asio::ip::udp::socket comm_socket(comm_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), UDP_RX_PORT));
 
 	boost::asio::ip::udp::endpoint recieved_endpoint;
-	unsigned char recv_buffer[65537];
+	unsigned char recv_buffer[65537]; 
 	
 	while(*is_active)
 	{
