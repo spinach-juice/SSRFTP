@@ -56,6 +56,21 @@ bool uchar_array_equal(unsigned char const * const a, unsigned char const * cons
 	return true;
 }
 
+void MD5(char const * const file_path, char* file_checksum)
+{
+	std::string cmd = (std::string)"md5sum " + file_path;
+
+	FILE* run_cmd = popen(cmd.c_str(), "r");
+	if(run_cmd == nullptr)
+		throw std::runtime_error("Could not retrieve md5 checksum from file");
+
+	size_t readsize = fread(file_checksum, sizeof(char), 32, run_cmd);
+
+	cmd += readsize; // this line is completely unnecessary, just makes the compiler shut up about unused variable readsize which makes it shut up about unused result on fread
+
+	pclose(run_cmd);
+}
+
 bool schar_array_equal(char const * const a, char const * const b, unsigned int size)
 {
 	unsigned int i = 0;
@@ -146,6 +161,25 @@ std::vector<unsigned long> ulong_array_singles(unsigned long const * const array
 	}
 
 	return singles;
+}
+
+unsigned long long getFileSize(std::ifstream& file)
+{
+	unsigned long long fileSize;
+
+	file.seekg(0,file.end);
+	fileSize = file.tellg();
+	return fileSize;
+}
+void getFileContents(std::ifstream& file,unsigned long long fileSize, char* buffer)
+{
+	char temp[fileSize];
+	
+	file.seekg(0,file.beg);
+	file.read(buffer, fileSize);
+	
+	//strncpy(buffer, temp,fileSize);
+	
 }
 
 std::vector<unsigned long> ulong_array_ranges(unsigned long const * const array, unsigned long const length)

@@ -20,14 +20,15 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 	long file_size = ftell(open_file);
 
 	this->shard_max = (unsigned long)file_size / SHARD_SIZE_MAX;
-	if((unsigned long)file_size / SHARD_SIZE_MAX > 0)
+	if((unsigned long)file_size % SHARD_SIZE_MAX > 0)
 		this->shard_max++;
 
 	fclose(open_file);
 
 	this->shard_ranges.push_back(0);
 	this->shard_ranges.push_back(this->shard_max);
-	this->return_array = nullptr;
+	this->single_array = nullptr;
+	this->range_array = nullptr;
 	this->transfer_id = trans_id;
 }
 
@@ -40,7 +41,8 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 	this->shard_ranges.push_back(num_shards);
 
 	this->shard_max = num_shards;
-	this->return_array = nullptr;
+	this->single_array = nullptr;
+	this->range_array = nullptr;
 	this->transfer_id = trans_id;
 }
 
@@ -50,13 +52,16 @@ ShardManager::ShardManager(const ShardManager& copy)
 	this->shard_max = copy.shard_max;
 	this->shard_singles = copy.shard_singles;
 	this->shard_ranges = copy.shard_ranges;
+	this->transfer_id = copy.transfer_id;
 	strcpy(this->attached_file, copy.attached_file);
 }
 
 ShardManager::~ShardManager()
 {
-	if(this->return_array != nullptr)
-		delete[] this->return_array;
+	if(this->range_array != nullptr)
+		delete[] this->range_array;
+	if(this->single_array != nullptr)
+		delete[] this->single_array;
 
 	// Collate all shards into final file here
 	FILE* output_file = fopen(this->attached_file, "w");
@@ -299,28 +304,28 @@ unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 {
 	num_singles = (unsigned long)this->shard_singles.size();
 
-	if(this->return_array != nullptr)
-		delete[] this->return_array;
-	this->return_array = new unsigned long[num_singles];
+	if(this->single_array != nullptr)
+		delete[] this->single_array;
+	this->single_array = new unsigned long[num_singles];
 
 	for(unsigned long i = 0; i < num_singles; i++)
-		this->return_array[i] = this->shard_singles.at(i);
+		this->single_array[i] = this->shard_singles.at(i);
 
-	return this->return_array;
+	return this->single_array;
 }
 
 unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 {
 	num_ranges = (unsigned long)this->shard_ranges.size() / 2;
 
-	if(this->return_array != nullptr)
-		delete[] this->return_array;
-	this->return_array = new unsigned long[num_ranges * 2];
+	if(this->range_array != nullptr)
+		delete[] this->range_array;
+	this->range_array = new unsigned long[num_ranges * 2];
 
 	for(unsigned long i = 0; i < num_ranges * 2; i++)
-		this->return_array[i] = this->shard_ranges.at(i);
+		this->range_array[i] = this->shard_ranges.at(i);
 
-	return this->return_array;
+	return this->range_array;
 }
 
 void ShardManager::add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size)

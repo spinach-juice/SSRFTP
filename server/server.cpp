@@ -17,6 +17,8 @@ void server::start_server()
     Communicator server_comm;
     ShardManager* shard_manager = nullptr;
     
+    string client_ip = "151.159.105.38";
+    
     bool client_start_packet_received = false;
     bool repeat = false;
     
@@ -77,6 +79,9 @@ void server::start_server()
                                 << trans_id << endl
                                 << filename << endl
                                 << filename_length << endl;
+                                
+                        server_comm.send_message(package_message(
+                            current_packet, client_ip));
                     }
                     else
                         repeat = true;
@@ -116,14 +121,13 @@ void server::start_server()
                 unsigned long num_singles;
                 unsigned long num_ranges;
                 
-                if(shard_manager != nullptr)
                     server_comm.send_message(
                     package_message(
                     build_shard_request_range(trans_id,
                         shard_manager->get_shard_singles(num_singles),
                         num_singles, 
                         shard_manager->get_shard_ranges(num_ranges),
-                        num_ranges), "192.168.1.1")); 
+                        num_ranges), client_ip)); 
             }
             
             repeat = false; 

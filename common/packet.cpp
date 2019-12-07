@@ -25,7 +25,7 @@ Packet::Packet(const Packet& p)
 
 Packet::~Packet()
 {
-	delete this->data;
+	delete[] this->data;
 }
 
 bool operator==(Packet& p1, Packet& p2)
@@ -113,7 +113,7 @@ void Packet::replace_checksum()
 Packet build_client_start(char const * const md5_chksum, unsigned long long const file_size, unsigned long const num_shards, unsigned short const trans_id, char const * const destination_path, unsigned short const path_length)
 {
 	unsigned short packet_length = path_length + 32;
-	unsigned char* bytes = new unsigned char[packet_length];
+	unsigned char* bytes = new unsigned char[packet_length + 1];
 	bytes[0] = bytes[1] = 0x00;
 	bytes[2] = (unsigned char)(packet_length >> 8);
 	bytes[3] = (unsigned char)(packet_length & 0x00ff);
@@ -137,14 +137,14 @@ Packet build_client_start(char const * const md5_chksum, unsigned long long cons
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete bytes;
+	delete[] bytes;
 	return p;
 }
 
 Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, unsigned char const * const shard_data, unsigned short const data_size)
 {
 	unsigned short packet_length = data_size + 11;
-	unsigned char* bytes = new unsigned char[packet_length];
+	unsigned char* bytes = new unsigned char[packet_length + 1];
 	bytes[0] = 0x00;
 	bytes[1] = 0x01;
 	bytes[2] = (unsigned char)(packet_length >> 8);
@@ -163,7 +163,7 @@ Packet build_file_shard(unsigned long const shard_num, unsigned short const tran
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete bytes;
+	delete[] bytes;
 	return p;
 }
 
@@ -221,8 +221,8 @@ Packet build_shard_request(unsigned short const trans_id, unsigned long const * 
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete ordered_shards;
-	delete bytes;
+	delete[] ordered_shards;
+	delete[] bytes;
 	return p;
 }
 
@@ -262,7 +262,7 @@ Packet build_shard_request_range(unsigned short const trans_id, unsigned long co
 	Packet p(bytes);
 	p.replace_checksum();
 
-	delete bytes;
+	delete[] bytes;
 	return p;
 
 }
@@ -354,6 +354,34 @@ bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long*
 	}
 
 	ulong_array_sort(missing_shards, num_missing_shards);
+
+	return p.verify_checksum();
+}
+
+bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long> missing_singles, std::vector<unsigned long> missing_ranges)
+{
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x03 || p.size() < 10)
+		return false;
+
+	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
+	unsigned short num_singles = (((unsigned short)(p.bytestream()[8])) << 8) | ((unsigned short)(p.bytestream()[9]));
+	unsigned short num_ranges = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+
+	unsigned long i = 12;
+	unsigned long num_missing_shards = 0;
+	for(; num_missing_shards < num_singles; num_missing_shards++, i+=4)
+	{
+		missing_singles[num_missing_shards] = (((unsigned long)(p.bytestream()[i])) << 24) | (((unsigned long)(p.bytestream()[i+1])) << 16) | (((unsigned long)(p.bytestream()[i+2])) << 8) | ((unsigned long)(p.bytestream()[i+3]));
+	}
+
+	unsigned short j = 0;
+	for(; j < num_ranges; j++, i+=8)
+	{
+		unsigned long range_start = (((unsigned long)(p.bytestream()[i])) << 24) | (((unsigned long)(p.bytestream()[i+1])) << 16) | (((unsigned long)(p.bytestream()[i+2])) << 8) | ((unsigned long)(p.bytestream()[i+3]));
+		unsigned long range_end = (((unsigned long)(p.bytestream()[i+4])) << 24) | (((unsigned long)(p.bytestream()[i+5])) << 16) | (((unsigned long)(p.bytestream()[i+6])) << 8) | ((unsigned long)(p.bytestream()[i+7]));
+		missing_ranges[2 * j] = range_start;
+		missing_ranges[(2 * j) + 1] = range_end;
+	}
 
 	return p.verify_checksum();
 }
