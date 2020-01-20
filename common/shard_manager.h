@@ -2,8 +2,9 @@
 #define __SHARD__MANAGER__H__
 
 #include <vector>
+#include <string>
 
-#define SHARD_SIZE_MAX 65524
+#define SHARD_SIZE_MAX 65495
 
 class ShardManager
 {
@@ -11,6 +12,7 @@ public:
 	ShardManager(char const * const filename, unsigned short trans_id); // constructor for file on local system
 	ShardManager(char const * const filename, unsigned short trans_id, unsigned long const num_shards);
 	ShardManager(const ShardManager&);
+	ShardManager();
 	~ShardManager();
 
 	unsigned long num_shards();
@@ -23,7 +25,11 @@ public:
 	void add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size);
 	bool shard_available(unsigned long const shard_num);
 
+	std::string get_filename();
+
 	bool is_done();
+
+	void disable();
 
 private:
 	char attached_file[260];
@@ -36,6 +42,8 @@ private:
 
 	unsigned long* range_array;
 	unsigned long* single_array;
+
+	bool disabled;
 };
 
 #endif
