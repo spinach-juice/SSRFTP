@@ -31,13 +31,16 @@ int main(int argc, char** argv)
 	unsigned short path_length = 4;
 	pthread_t send_loop;
 	pthread_t receive_loop;
+
+
+	if(argc < 2)
+	{
+		std::cout << "Filename not provided, please provide filename." << std::endl;
+		return 0;
+	}
 	
-	//implement rest here
-	//tcpListener full_file;
-	//full_file.Listen();
-	//file = &full_file.getPath();
-	
-	file.open("sendfile");	
+
+	file.open(argv[1]);	
 
 	fileSize = getFileSize(file);
 	
@@ -51,12 +54,14 @@ int main(int argc, char** argv)
 	char buffer[fileSize];
 	getFileContents(file,fileSize, buffer);
 	
-	MD5("/home/adam/Desktop/Senior_Design/SSRFTP/client/sendFile",file_checksum); 
+	MD5(argv[1],file_checksum); 
+	
+	
 	
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
 	
 	com.start();
-	
+	/*
 	while(state == 0)
 	{
 		if(com.message_available())
@@ -65,18 +70,18 @@ int main(int argc, char** argv)
 			if(m.first == start_packet)
 				state = 1;
 		}
-		com.send_message(package_message(start_packet,"151.159.105.136"));
+	std:: cout << "SENDING" << std::endl;	com.send_message(package_message(start_packet,"192.168.1.1"));
 		usleep(1000000);
 	} 
 	
-	
+*/
 	char data[DataPerPacket];
 	Packet current = build_file_shard(0, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
 	
 	for(int i = 0; i< (int)shard_num; i++)
 	{
 		
-		file.read(data, sizeof(data));
+		file.read(data, (int)sizeof(data));
 		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
 		shardPackets.push_back(current);
 	}
@@ -85,10 +90,9 @@ int main(int argc, char** argv)
 	pthread_create(&receive_loop,nullptr,receive, nullptr);
 
 	//wait for the server to send the request packet
-	
 	while(!com.message_available())
 	{
-		usleep(1000000);
+		usleep(100000);
 	}
 
 	Message m = com.read_message();
@@ -140,13 +144,14 @@ int main(int argc, char** argv)
 
 void* send(void* args)
 {
-
+	
+	std::cout << (int)sizeof(shardPackets) << std::endl;
 	while(!state_change)
 	{
 		for(int i = 0; i < (int)sizeof(shardPackets); i++)
 		{
-			com.send_message(package_message(shardPackets[i],"151.159.105.136"));
-			usleep(10000);
+		std::cout << i << std::endl;	com.send_message(package_message(shardPackets[i],"192.168.1.1"));
+			usleep(1000000);
 		}
 	}
 		
@@ -160,6 +165,7 @@ void* receive(void* args)
 		{
 			state_change = 1;
 		}
+		usleep(100000);
 		
 	}
 
