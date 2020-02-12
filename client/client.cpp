@@ -8,126 +8,183 @@
 #include <unistd.h>
 #include "communicator.h"
 #include "packet.h"
+#include "client.h"
 #include "util.h"
-#include <cstring>
-#include <cstdio>
-#include "shard_manager.h"
+#include "tcp_listener.h"
+
+
+unsigned long const DataPerPacket = 1024;
+
+int state = 0; 
+bool state_change = false;
+std::vector<Packet> shardPackets;
+Communicator com; 
 
 int main(int argc, char** argv)
 {
-	// Command line arguments: ./SSRFTP_client filename endpoint
-	if(argc != 3)
+	
+	std::ifstream file;	
+	unsigned long long fileSize;
+	unsigned long shard_num;
+	unsigned short trans_id = 0;
+	char const* destination_path = "file";
+	unsigned short path_length = 4;
+	pthread_t send_loop;
+	pthread_t receive_loop;
+
+
+	if(argc < 2)
 	{
-		std::cout << "Usage: SSRFTP_client filename endpoint" << std::endl;
-		return 1;
+		std::cout << "Filename not provided, please provide filename." << std::endl;
+		return 0;
 	}
+	
 
-	char file_to_transfer[261] = {0};
-	strcpy(file_to_transfer, argv[1]);
-	char endpoint[16] = {0};
-	strcpy(endpoint, argv[2]);
+	file.open(argv[1]);	
 
-	FILE* open_file = fopen(file_to_transfer, "r");
-	if(open_file == nullptr)
+	fileSize = getFileSize(file);
+	
+	shard_num = fileSize/DataPerPacket;
+	
+	if(fileSize % DataPerPacket != 0)
+		shard_num++;
+
+	//assume that this works for now
+	char file_checksum[33]; 
+	char buffer[fileSize];
+	getFileContents(file,fileSize, buffer);
+	
+	MD5(argv[1],file_checksum); 
+	
+	
+	
+	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
+	
+	com.start();
+	/*
+	while(state == 0)
 	{
-		std::cerr << "Could not open file: " << file_to_transfer << std::endl;
-		return 1;
-	}
-
-	fseek(open_file, 0, SEEK_END);
-
-	long file_size = ftell(open_file);
-	fclose(open_file);
-
-	unsigned long tot_shards = (unsigned long)file_size / 65524;
-	if((unsigned long)file_size % 65524)
-		tot_shards++;
-
-	unsigned short trans_id = 1337;
-	unsigned short path_length = (unsigned short)strlen(file_to_transfer);
-
-	char md5_chk[33] = {0};
-	MD5(file_to_transfer, md5_chk);
-
-	Packet client_start = build_client_start(md5_chk, file_size, tot_shards, trans_id, file_to_transfer, path_length);
-
-	Communicator com;
-
-	std::string rcv_endpoint;
-	bool starting_handshake = false;
-	while(!starting_handshake)
-	{
-		com.send_message(package_message(client_start, (std::string)endpoint));
-		usleep(100000);
-		while(com.message_available())
+		if(com.message_available())
 		{
 			Message m = com.read_message();
-
-			Packet p = get_packet(m);
-			if(p == client_start)
-			{
-				rcv_endpoint = get_endpoint(m);
-				starting_handshake = true;
-			}
+			if(m.first == start_packet)
+				state = 1;
 		}
-	}
-	while(com.message_available())
-		com.read_message();
-
-	ShardManager sm(file_to_transfer, trans_id);
-	bool transfer_in_progress = true;
-	while(transfer_in_progress)
+	std:: cout << "SENDING" << std::endl;	com.send_message(package_message(start_packet,"192.168.1.1"));
+		usleep(1000000);
+	} 
+	
+*/
+	char data[DataPerPacket];
+	Packet current = build_file_shard(0, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
+	
+	for(int i = 0; i< (int)shard_num; i++)
 	{
-		// send range of file shards
-		for(unsigned long i = 0; i < tot_shards; i++)
-		{
-			if(sm.shard_available(i))
-			{
-				unsigned char* shard_data;
-				unsigned short shard_size;
+		
+		file.read(data, (int)sizeof(data));
+		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
+		shardPackets.push_back(current);
+	}
 
-				shard_data = sm.get_shard_data(i, shard_size);
+	pthread_create(&send_loop, nullptr,send,nullptr);
+	pthread_create(&receive_loop,nullptr,receive, nullptr);
 
-				Packet p = build_file_shard(i, trans_id, shard_data, shard_size);
-				com.send_message(package_message(p, (std::string)endpoint));
-			}
-		}
-
-		// Sleep for a bit
+	//wait for the server to send the request packet
+	while(!com.message_available())
+	{
 		usleep(100000);
+	}
 
-		// Check for a response
-		while(com.message_available())
+	Message m = com.read_message();
+	Packet return_packet = m.first;
+	
+	unsigned long missing_shards[shard_num];
+	unsigned long  num_missing_shards;
+	std::vector<Packet> new_shardPackets;
+
+	//this will need to be implemented into a function later
+	//to 1)clean up main 2)the have steps in process be defined
+	
+	bool transferComplete = false;
+	bool success_state = true;
+	while(!transferComplete)
+	{
+		interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
+		Packet transfer_complete_packet  = build_transfer_complete(/*trasmittion id*/5, success_state);
+
+	 	
+		//change the packets that are being sent to only the ones we need
+		for(int i = 0; i < (int)num_missing_shards;i++)
+			new_shardPackets.push_back(shardPackets[missing_shards[i]]);
+
+		shardPackets = new_shardPackets;
+		
+		state_change = 0; 
+		pthread_create(&send_loop, nullptr,send,nullptr);
+		pthread_create(&receive_loop,nullptr,receive, nullptr);
+		
+
+		
+		
+		while(!state_change)
 		{
-			Packet p = get_packet(com.read_message());
+			usleep(1000000);
+		}
+		
+		Message m = com.read_message();
+		if(m.first == transfer_complete_packet)
+			transferComplete = true;
+		else 
+			new_shardPackets.clear();
+	}
+	
+  	return 0;
+}
 
-			switch(p.int_type())
-			{
-			case 3: // shard request packet
-				{
-					unsigned short recv_trans_id;
-					std::vector<unsigned long> missing_singles;
-					std::vector<unsigned long> missing_ranges;
-					if(interpret_shard_request_range(p, recv_trans_id, missing_singles, missing_ranges) && recv_trans_id == trans_id)
-					{
-						// narrow shards being sent
-					}
-				}
-			break;
 
-			case 4: // transfer complete packet
-				{
-					unsigned short recv_trans_id;
-					bool success;
-					if(interpret_transfer_complete(p, recv_trans_id, success) && recv_trans_id == trans_id && success)
-					{
-						transfer_in_progress = false;
-						com.send_message(package_message(p, (std::string)endpoint));
-					}
-				}
-			break;
-			}
+void* send(void* args)
+{
+	
+	std::cout << (int)sizeof(shardPackets) << std::endl;
+	while(!state_change)
+	{
+		for(int i = 0; i < (int)sizeof(shardPackets); i++)
+		{
+		std::cout << i << std::endl;	com.send_message(package_message(shardPackets[i],"192.168.1.1"));
+			usleep(1000000);
 		}
 	}
-	return 0;
+		
+
 }
+void* receive(void* args)
+{
+	while(!state_change)
+	{
+		if(com.message_available())
+		{
+			state_change = 1;
+		}
+		usleep(100000);
+		
+	}
+
+}
+
+void getDataPath()
+{
+
+}
+void getMD5checksum()
+{
+
+}
+void sendStart()
+{
+
+}
+void sendData()
+{
+
+}
+
