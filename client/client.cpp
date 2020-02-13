@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
 	
 	com.start();
-	/*
+
 	while(state == 0)
 	{
 		if(com.message_available())
@@ -73,16 +73,15 @@ int main(int argc, char** argv)
 	std:: cout << "SENDING" << std::endl;	com.send_message(package_message(start_packet,"192.168.1.1"));
 		usleep(1000000);
 	} 
-	
-*/
+
 	char data[DataPerPacket];
-	Packet current = build_file_shard(0, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
+	Packet current = build_file_shard(0, 5, (unsigned char const * const)data, DataPerPacket);
 	
 	for(int i = 0; i< (int)shard_num; i++)
 	{
 		
 		file.read(data, (int)sizeof(data));
-		current = build_file_shard(i, /*trasmittion id*/5, (unsigned char const * const)data, DataPerPacket);
+		current = build_file_shard(i, 5, (unsigned char const * const)data, DataPerPacket);
 		shardPackets.push_back(current);
 	}
 
@@ -144,13 +143,11 @@ int main(int argc, char** argv)
 
 void* send(void* args)
 {
-	
-	std::cout << (int)sizeof(shardPackets) << std::endl;
 	while(!state_change)
 	{
-		for(int i = 0; i < (int)sizeof(shardPackets); i++)
-		{
-		std::cout << i << std::endl;	com.send_message(package_message(shardPackets[i],"192.168.1.1"));
+		for(int i = 0; i < shardPackets.size(); i++)
+		{	
+		com.send_message(package_message(shardPackets[i],"192.168.1.1"));
 			usleep(1000000);
 		}
 	}
