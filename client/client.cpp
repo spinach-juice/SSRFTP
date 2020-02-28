@@ -69,7 +69,8 @@ int main(int argc, char** argv)
 			Message m = com.read_message();
 			if(m.first == start_packet)
 				state = 1;
-		}	com.send_message(package_message(start_packet,"192.168.1.1"));
+		}	
+		com.send_message(package_message(start_packet,"192.168.1.1"));
 		usleep(1000000);
 	} 
 
@@ -146,7 +147,7 @@ void* send(void* args)
 	{
 		for(int i = 0; i < shardPackets.size(); i++)
 		{	
-		com.send_message(package_message(shardPackets[i],"192.168.1.1"));
+			com.send_message(package_message(shardPackets[i],"192.168.1.1"));
 			usleep(1000000);
 		}
 	}
