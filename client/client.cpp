@@ -19,6 +19,10 @@ int state = 0;
 bool state_change = false;
 std::vector<Packet> shardPackets;
 Communicator com; 
+std::string IP = "";
+
+
+//IP address = "192.168.56.1"
 
 int main(int argc, char** argv)
 {
@@ -38,6 +42,14 @@ int main(int argc, char** argv)
 		std::cout << "Filename not provided, please provide filename." << std::endl;
 		return 0;
 	}
+
+	if(argc < 3)
+	{
+		std::cout << "IP Address not provided, provide IP Address." << std::endl;
+		return 0;
+	}
+
+	IP = argv[2];
 	
 
 	file.open(argv[1]);	
@@ -105,11 +117,9 @@ int main(int argc, char** argv)
 	//to 1)clean up main 2)the have steps in process be defined
 	
 	bool transferComplete = false;
-	bool success_state = true;
 	while(!transferComplete)
 	{
 		interpret_shard_request(return_packet,trans_id, missing_shards, num_missing_shards);
-		Packet transfer_complete_packet  = build_transfer_complete(/*trasmittion id*/5, success_state);
 
 	 	
 		//change the packets that are being sent to only the ones we need
@@ -131,7 +141,8 @@ int main(int argc, char** argv)
 		}
 		
 		Message m = com.read_message();
-		if(m.first == transfer_complete_packet)
+
+		if(num_missing_shards == 0)
 			transferComplete = true;
 		else 
 			new_shardPackets.clear();
@@ -147,7 +158,7 @@ void* send(void* args)
 	{
 		for(int i = 0; i < shardPackets.size(); i++)
 		{	
-			com.send_message(package_message(shardPackets[i],"192.168.1.1"));
+			com.send_message(package_message(shardPackets[i], IP));
 			usleep(1000000);
 		}
 	}
