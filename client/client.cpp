@@ -91,8 +91,9 @@ int main(int argc, char** argv)
 	
 	for(int i = 0; i< (int)shard_num; i++)
 	{
+		file.seekg(i*(DataPerPacket), file.beg);
 		
-		file.read(data, (int)sizeof(data));
+		file.read(data, DataPerPacket);
 		current = build_file_shard(i, 5, (unsigned char const * const)data, DataPerPacket);
 		shardPackets.push_back(current);
 	}
