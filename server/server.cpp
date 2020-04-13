@@ -17,7 +17,7 @@ void server::start_server()
     Communicator server_comm;
     ShardManager* shard_manager = nullptr;
     
-    string client_ip = "192.168.0.125";
+    string client_ip = "192.168.1.103";
     
     bool client_start_packet_received = false;
     bool transfer_complete = false;
@@ -147,11 +147,13 @@ void server::start_server()
                 unsigned long* singles = shard_manager->get_shard_singles(num_singles);
                 unsigned long* ranges = shard_manager->get_shard_ranges(num_ranges);
                 
-                //dbg
-                cout << "Sending Shard Request Packet\n";
-                //end-dbg
                 
                 if(num_singles != 0 || num_ranges != 0)
+                {
+                    //dbg
+                    cout << "Sending Shard Request Packet\n";
+                    //end-dbg
+                
                     server_comm.send_message(
                     package_message(
                     build_shard_request_range(trans_id,
@@ -159,6 +161,8 @@ void server::start_server()
                         num_singles, 
                         ranges,
                         num_ranges), client_ip)); 
+                        
+                }
                         
                 if(shard_manager->is_done())
                     transfer_complete = true;
