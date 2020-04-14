@@ -22,12 +22,9 @@ Communicator com;
 std::string IP = "";
 
 
-//IP address = "192.168.56.1"
-
 int main(int argc, char** argv)
-{
-	
-	std::ifstream file;	
+{	
+	std::ifstream file;
 	unsigned long long fileSize;
 	unsigned long shard_num;
 	unsigned short trans_id = 0;
@@ -56,19 +53,13 @@ int main(int argc, char** argv)
 
 	fileSize = getFileSize(file);
 	
-	shard_num = fileSize/DataPerPacket;
-	
-	if(fileSize % DataPerPacket != 0)
-		shard_num++;
-
-	//assume that this works for now
 	char file_checksum[33]; 
-	char buffer[fileSize];
-	getFileContents(file,fileSize, buffer);
+
+	ShardManager manager(argv[1],1);
 	
 	MD5(argv[1],file_checksum); 
 	
-	
+	shard_num = manager.num_shards();
 	
 	Packet start_packet = build_client_start(file_checksum,fileSize,shard_num,trans_id,destination_path,path_length); 
 	
@@ -82,19 +73,19 @@ int main(int argc, char** argv)
 			if(m.first == start_packet)
 				state = 1;
 		}	
-		com.send_message(package_message(start_packet,"192.168.1.1"));
+		com.send_message(package_message(start_packet,IP));
 		usleep(1000000);
 	} 
 
 	char data[DataPerPacket];
 	Packet current = build_file_shard(0, 5, (unsigned char const * const)data, DataPerPacket);
 	
+	unsigned char* shard_array= manager.get_shard_data(shard_num,DataPerPacket);
+
+	
 	for(int i = 0; i< (int)shard_num; i++)
 	{
-		file.seekg(i*(DataPerPacket), file.beg);
-		
-		file.read(data, DataPerPacket);
-		current = build_file_shard(i, 5, (unsigned char const * const)data, DataPerPacket);
+		current = build_file_shard(i, 5, (unsigned char const * const)shard_array[i], DataPerPacket);
 		shardPackets.push_back(current);
 	}
 
@@ -134,8 +125,6 @@ int main(int argc, char** argv)
 		pthread_create(&receive_loop,nullptr,receive, nullptr);
 		
 
-		
-		
 		while(!state_change)
 		{
 			usleep(1000000);
@@ -179,25 +168,6 @@ void* receive(void* args)
 	}
 
 }
-
-void getDataPath()
-{
-
-}
-void getMD5checksum()
-{
-
-}
-void sendStart()
-{
-
-}
-void sendData()
-{
-
-}
-
-
 
 
 
