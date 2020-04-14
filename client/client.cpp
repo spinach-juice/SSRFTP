@@ -11,6 +11,7 @@
 #include "client.h"
 #include "util.h"
 #include "tcp_listener.h"
+#include "shard_manager.h"
 
 
 unsigned long const DataPerPacket = 1024;
@@ -78,9 +79,13 @@ int main(int argc, char** argv)
 	} 
 
 	char data[DataPerPacket];
+
+	//may lead to problems
+	unsigned short shard_size = (unsigned short&)DataPerPacket;
+	
 	Packet current = build_file_shard(0, 5, (unsigned char const * const)data, DataPerPacket);
 	
-	unsigned char* shard_array= manager.get_shard_data(shard_num,DataPerPacket);
+	unsigned char* shard_array= manager.get_shard_data(shard_num,shard_size);
 
 	
 	for(int i = 0; i< (int)shard_num; i++)
@@ -105,8 +110,6 @@ int main(int argc, char** argv)
 	unsigned long  num_missing_shards;
 	std::vector<Packet> new_shardPackets;
 
-	//this will need to be implemented into a function later
-	//to 1)clean up main 2)the have steps in process be defined
 	
 	bool transferComplete = false;
 	while(!transferComplete)
