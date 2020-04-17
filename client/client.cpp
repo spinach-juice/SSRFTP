@@ -111,6 +111,7 @@ int main(int argc, char** argv)
 					if(interpret_shard_request_range(p, recv_trans_id, missing_singles, missing_ranges) && recv_trans_id == trans_id)
 					{
 						// narrow shards being sent
+						sm.impress_request(missing_singles,missing_ranges);
 					}
 				}
 			break;

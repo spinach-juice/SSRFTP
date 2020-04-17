@@ -16,7 +16,7 @@ RangeList::RangeList(unsigned long min, unsigned long max)
 
 RangeList::RangeList(const RangeList& copy)
 {
-	this->minimum = copy.minumum;
+	this->minimum = copy.minimum;
 	this->maximum = copy.maximum;
 
 	dual_link* curr_cp = copy.headptr;
@@ -37,7 +37,7 @@ RangeList::RangeList(const RangeList& copy)
 	while(curr_cp != nullptr)
 	{
 		curr->next = new dual_link;
-		curr = curr_next;
+		curr = curr->next;
 
 		curr->start = curr_cp->start;
 		curr->end = curr_cp->end;
@@ -88,7 +88,7 @@ std::vector<unsigned long> RangeList::get_single_list()
 
 std::vector<unsigned long> RangeList::get_range_list()
 {
-	dual_list* curr = this->headptr;
+	dual_link* curr = this->headptr;
 	std::vector<unsigned long> list;
 
 	while(curr != nullptr)

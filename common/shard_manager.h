@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "range_list.h"
 
 #define SHARD_SIZE_MAX 65495
 

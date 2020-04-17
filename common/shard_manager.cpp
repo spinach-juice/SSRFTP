@@ -187,7 +187,7 @@ unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 
 void ShardManager::add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size)
 {
-	this->rl.add(shard_num)
+	this->rl.add(shard_num);
 
 	if(this->disabled || this->shard_available(shard_num) || !this->fill_mode)
 		return;
@@ -214,7 +214,7 @@ bool ShardManager::shard_available(unsigned long const shard_num)
 	if(this->disabled)
 		return false;
 
-	this->rl.is_in_list(shard_num);
+	return this->rl.is_in_list(shard_num);
 }
 
 void ShardManager::impress_request(std::vector<unsigned long> singles, std::vector<unsigned long> ranges)
@@ -226,7 +226,7 @@ bool ShardManager::is_done()
 {
 	if(this->disabled)
 		return false;
-	return this->rl.get_single_list.empty() && this->rl.get_range_list.empty();
+	return this->rl.get_single_list().empty() && this->rl.get_range_list().empty();
 }
 
 std::string ShardManager::get_filename()
