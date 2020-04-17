@@ -32,6 +32,8 @@ public:
 	void disable();
 
 private:
+	RangeList rl;
+
 	char attached_file[260];
 	unsigned long shard_max;
 	std::vector<unsigned long> shard_ranges;

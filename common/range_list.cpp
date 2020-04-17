@@ -2,14 +2,16 @@
 #include <algorithm>
 
 
+RangeList::RangeList()
+{
+	this->minimum = 0;
+	this->maximum = 0;
+	this->headptr = nullptr;
+}
+
 RangeList::RangeList(unsigned long min, unsigned long max)
 {
-	this->minimum = min;
-	this->maximum = max;
-	this->headptr = new dual_link;
-	this->headptr->next = nullptr;
-	this->headptr->start = min;
-	this->headptr->end = max;
+	this->init(min, max);
 }
 
 RangeList::~RangeList()
@@ -23,6 +25,16 @@ RangeList::~RangeList()
 		curr = curr->next;
 		delete temp;
 	}
+}
+
+void RangeList::init(unsigned long min, unsigned long max)
+{
+	this->minimum = min;
+	this->maximum = max;
+	this->headptr = new dual_link;
+	this->headptr->next = nullptr;
+	this->headptr->start = min;
+	this->headptr->end = max;
 }
 
 std::vector<unsigned long> RangeList::get_single_list()
@@ -219,7 +231,7 @@ void RangeList::impress(std::vector<unsigned long> singles, std::vector<unsigned
 	}
 }
 
-bool RangeList::is_in_list(num)
+bool RangeList::is_in_list(unsigned long num)
 {
 	if(num < this->minimum || num > this->maximum)
 		return false;
@@ -237,4 +249,15 @@ bool RangeList::is_in_list(num)
 	}
 
 	return false;
+}
+
+
+void RangeList::set_min(unsigned long num)
+{
+	this->minimum = num;
+}
+
+void RangeList::set_max(unsigned long num)
+{
+	this->maximum = num;
 }
