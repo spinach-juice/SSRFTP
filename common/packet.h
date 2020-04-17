@@ -44,7 +44,7 @@ bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& fil
 bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, unsigned char* shard_data, unsigned short& data_size);
 bool interpret_shard_end(Packet& p, unsigned short& trans_id);
 bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long* missing_shards, unsigned long& num_missing_shards);
-bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long> missing_singles, std::vector<unsigned long> missing_ranges);
+bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long>& missing_singles, std::vector<unsigned long>& missing_ranges);
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state);
 
 #endif

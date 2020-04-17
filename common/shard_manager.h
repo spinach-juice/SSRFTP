@@ -25,6 +25,8 @@ public:
 	void add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size);
 	bool shard_available(unsigned long const shard_num);
 
+	void impress_request(std::vector<unsigned long> singles, std::vector<unsigned long> ranges);
+
 	std::string get_filename();
 
 	bool is_done();

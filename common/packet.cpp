@@ -358,7 +358,7 @@ bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long*
 	return p.verify_checksum();
 }
 
-bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long> missing_singles, std::vector<unsigned long> missing_ranges)
+bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long>& missing_singles, std::vector<unsigned long>& missing_ranges)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x03 || p.size() < 10)
 		return false;
@@ -366,6 +366,9 @@ bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vec
 	trans_id = (((unsigned short)(p.bytestream()[6])) << 8) | ((unsigned short)(p.bytestream()[7]));
 	unsigned short num_singles = (((unsigned short)(p.bytestream()[8])) << 8) | ((unsigned short)(p.bytestream()[9]));
 	unsigned short num_ranges = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+
+	missing_singles.resize(num_singles);
+	missing_ranges.resize(num_ranges * 2);
 
 	unsigned long i = 12;
 	unsigned long num_missing_shards = 0;

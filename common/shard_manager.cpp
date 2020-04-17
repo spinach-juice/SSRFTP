@@ -217,6 +217,11 @@ bool ShardManager::shard_available(unsigned long const shard_num)
 	this->rl.is_in_list(shard_num);
 }
 
+void ShardManager::impress_request(std::vector<unsigned long> singles, std::vector<unsigned long> ranges)
+{
+	this->rl.impress(singles,ranges);
+}
+
 bool ShardManager::is_done()
 {
 	if(this->disabled)
