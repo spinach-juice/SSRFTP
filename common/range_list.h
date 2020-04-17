@@ -15,6 +15,7 @@ class RangeList
 public:
 	RangeList();
 	RangeList(unsigned long min, unsigned long max);
+	RangeList(const RangeList&);
 	~RangeList();
 
 	std::vector<unsigned long> get_single_list();

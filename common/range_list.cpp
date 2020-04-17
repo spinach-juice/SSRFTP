@@ -14,6 +14,39 @@ RangeList::RangeList(unsigned long min, unsigned long max)
 	this->init(min, max);
 }
 
+RangeList::RangeList(const RangeList& copy)
+{
+	this->minimum = copy.minumum;
+	this->maximum = copy.maximum;
+
+	dual_link* curr_cp = copy.headptr;
+	if(curr_cp == nullptr)
+	{
+		this->headptr = nullptr;
+		return;
+	}
+
+	this->headptr = new dual_link;
+	dual_link* curr = this->headptr;
+	curr->start = curr_cp->start;
+	curr->end = curr_cp->end;
+	curr->next = nullptr;
+
+	curr_cp = curr_cp->next;
+
+	while(curr_cp != nullptr)
+	{
+		curr->next = new dual_link;
+		curr = curr_next;
+
+		curr->start = curr_cp->start;
+		curr->end = curr_cp->end;
+		curr->next = nullptr;
+
+		curr_cp = curr_cp->next;
+	}
+}
+
 RangeList::~RangeList()
 {
 	dual_link* curr = this->headptr;
