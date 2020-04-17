@@ -25,13 +25,8 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 
 	fclose(open_file);
 
-	if(this->shard_max > 0)
-	{
-		this->shard_ranges.push_back(0);
-		this->shard_ranges.push_back(this->shard_max);
-	}
-	else
-		this->shard_singles.push_back(0);
+	this->rl.init(0, this->shard_max);
+
 	this->single_array = nullptr;
 	this->range_array = nullptr;
 	this->transfer_id = trans_id;
@@ -42,13 +37,8 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 {
 	this->fill_mode = true;
 	strcpy(this->attached_file, filename);
-	if(num_shards > 1)
-	{
-		this->shard_ranges.push_back(0);
-		this->shard_ranges.push_back(num_shards - 1);
-	}
-	else
-		this->shard_singles.push_back(0);
+
+	this->rl.init(0, num_shards);
 
 	this->shard_max = num_shards - 1;
 	this->single_array = nullptr;
@@ -61,8 +51,7 @@ ShardManager::ShardManager(const ShardManager& copy)
 {
 	this->fill_mode = copy.fill_mode;
 	this->shard_max = copy.shard_max;
-	this->shard_singles = copy.shard_singles;
-	this->shard_ranges = copy.shard_ranges;
+	this->rl = copy.rl;
 	this->transfer_id = copy.transfer_id;
 	strcpy(this->attached_file, copy.attached_file);
 	this->disabled = copy.disabled;
@@ -149,184 +138,13 @@ unsigned char* ShardManager::get_shard_data(unsigned long const shard_num, unsig
 
 void ShardManager::remove_shard(unsigned long const shard_num)
 {
-	if(!this->shard_available(shard_num) || this->fill_mode)
-		return;
-
-	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
-	{
-		if(this->shard_singles.at(i) == shard_num)
-		{
-			this->shard_singles.erase(this->shard_singles.begin() + i);
-			return;
-		}
-	}
-
-	unsigned long i = 0;
-	while(i < this->shard_ranges.size() && this->shard_ranges.at(i) < shard_num)
-	{
-		i++;
-
-		if(this->shard_ranges.at(i) > shard_num)
-		{
-			unsigned long next_range_end = this->shard_ranges.at(i);
-			this->shard_ranges.at(i) = shard_num - 1;
-			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, next_range_end);
-			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, shard_num + 1);
-			if(this->shard_ranges.at(i + 1) == this->shard_ranges.at(i + 2))
-			{
-				this->shard_singles.push_back(shard_num + 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i + 1, this->shard_ranges.begin() + i + 3);
-			}
-			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
-			{
-				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
-			}
-
-			return;
-		}
-		else if(this->shard_ranges.at(i) == shard_num)
-		{
-			this->shard_ranges.at(i)--;
-			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
-			{
-				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
-			}
-			return;
-		}
-
-		i++;
-	}
-
-	if(this->shard_ranges.at(i) == shard_num)
-	{
-		this->shard_ranges.at(i) = shard_num + 1;
-		if(this->shard_ranges.at(i) == this->shard_ranges.at(i + 1))
-		{
-			this->shard_singles.push_back(shard_num + 1);
-			this->shard_ranges.erase(this->shard_ranges.begin() + i, this->shard_ranges.begin() + i + 2);
-		}
-	}
+	this->rl.remove(shard_num);
 }
 
 void ShardManager::remove_shard_range(unsigned long const lower_bound, unsigned long const upper_bound)
 {
-	if(this->fill_mode || this->disabled)
-		return;
-
-	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
-		if(this->shard_singles.at(i) >= lower_bound && this->shard_singles.at(i) <= upper_bound)
-			this->shard_singles.erase(this->shard_singles.begin() + i);
-
-	unsigned long first_inside = 0;
-	while(first_inside < this->shard_ranges.size() && this->shard_ranges.at(first_inside) < lower_bound)
-		first_inside++;
-
-	if(first_inside == this->shard_ranges.size())
-		return;
-
-	unsigned long last_inside = shard_ranges.size() - 1;
-	while(last_inside != ((unsigned long)0) - 1 && this->shard_ranges.at(last_inside) > upper_bound)
-		last_inside--;
-
-	if(last_inside == ((unsigned long)0) - 1)
-		return;
-
-	if(first_inside & 1) // first range bound inside given range is an upper bound
-	{
-		if(last_inside & 1) // last range bound inside given range is an upper bound
-		{
-			if(first_inside == last_inside) // range contains only this upper bound
-			{
-				this->shard_ranges.at(first_inside) = lower_bound - 1;
-				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(first_inside - 1))
-				{
-					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside + 1);
-				}
-			}
-			else // range spans multiple internal ranges
-			{
-				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside + 1);
-				this->shard_ranges.at(first_inside) = lower_bound - 1;
-				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(first_inside - 1))
-				{
-					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside + 1);
-				}
-			}
-		}
-		else // last range bound inside given range is a lower bound
-		{
-			if(first_inside > last_inside) // range is inside an internal range entirely
-			{
-				this->shard_ranges.insert(this->shard_ranges.begin() + first_inside, upper_bound + 1);
-				this->shard_ranges.insert(this->shard_ranges.begin() + first_inside, lower_bound - 1);
-				if(this->shard_ranges.at(first_inside) == this->shard_ranges.at(last_inside))
-				{
-					this->shard_singles.push_back(this->shard_ranges.at(first_inside));
-					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + first_inside + 1);
-				}
-				if(this->shard_ranges.at(first_inside + 1) == this->shard_ranges.at(first_inside + 2))
-				{
-					this->shard_singles.push_back(this->shard_ranges.at(first_inside + 1));
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + first_inside + 3);
-				}
-			}
-			else // range is between two or more internal ranges
-			{
-				if(first_inside + 1 < last_inside)
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside + 1, this->shard_ranges.begin() + last_inside);
-
-				last_inside = first_inside + 1;
-				this->shard_ranges.at(first_inside) = lower_bound - 1;
-				this->shard_ranges.at(last_inside) = upper_bound + 1;
-				if(this->shard_ranges.at(first_inside - 1) == lower_bound - 1)
-				{
-					this->shard_singles.push_back(lower_bound - 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside - 1, this->shard_ranges.begin() + first_inside + 1);
-				}
-				if(this->shard_ranges.at(last_inside + 1) == upper_bound + 1)
-				{
-					this->shard_singles.push_back(upper_bound + 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + last_inside, this->shard_ranges.begin() + last_inside + 2);
-				}
-			}
-		}
-	}
-	else // first range bound inside given range is a lower bound
-	{
-		if(last_inside & 1) // last range bound inside given range is an upper bound
-		{
-			if(last_inside > first_inside) // range is inside 1 or more internal ranges
-			{
-				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside + 1);
-			}
-		}
-		else // last range bound inside given range is a lower bound
-		{
-			if(last_inside == first_inside) // only member in range is this lower bound
-			{
-				this->shard_ranges.at(first_inside) = upper_bound + 1;
-				if(this->shard_ranges.at(first_inside + 1) == upper_bound + 1)
-				{
-					this->shard_singles.push_back(upper_bound + 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 2);
-				}
-			}
-			else
-			{
-				this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + last_inside);
-				this->shard_ranges.at(first_inside) = upper_bound + 1;
-				if(this->shard_ranges.at(first_inside + 1) == upper_bound + 1)
-				{
-					this->shard_singles.push_back(upper_bound + 1);
-					this->shard_ranges.erase(this->shard_ranges.begin() + first_inside, this->shard_ranges.begin() + first_inside + 2);
-				}
-			}
-		}
-	}
+	for(unsigned long i = lower_bound; i <= upper_bound; i++)
+		this->remove_shard(i);
 }
 
 unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
@@ -334,14 +152,16 @@ unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 	if(this->disabled)
 		return nullptr;
 
-	num_singles = (unsigned long)this->shard_singles.size();
+	std::vector<unsigned long> shard_singles = this->rl.get_single_list();
+
+	num_singles = (unsigned long)shard_singles.size();
 
 	if(this->single_array != nullptr)
 		delete[] this->single_array;
 	this->single_array = new unsigned long[num_singles];
 
 	for(unsigned long i = 0; i < num_singles; i++)
-		this->single_array[i] = this->shard_singles.at(i);
+		this->single_array[i] = shard_singles.at(i);
 
 	return this->single_array;
 }
@@ -351,76 +171,26 @@ unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 	if(this->disabled)
 		return nullptr;
 
-	num_ranges = (unsigned long)this->shard_ranges.size() / 2;
+	std::vector<unsigned long> shard_ranges = this->rl.get_range_list();
+
+	num_ranges = (unsigned long)shard_ranges.size() / 2;
 
 	if(this->range_array != nullptr)
 		delete[] this->range_array;
 	this->range_array = new unsigned long[num_ranges * 2];
 
 	for(unsigned long i = 0; i < num_ranges * 2; i++)
-		this->range_array[i] = this->shard_ranges.at(i);
+		this->range_array[i] = shard_ranges.at(i);
 
 	return this->range_array;
 }
 
 void ShardManager::add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size)
 {
+	this->rl.add(shard_num)
+
 	if(this->disabled || this->shard_available(shard_num) || !this->fill_mode)
 		return;
-
-	for(unsigned long i = 0; i < this->shard_singles.size(); i++)
-	{
-		if(this->shard_singles.at(i) == shard_num)
-		{
-			this->shard_singles.erase(this->shard_singles.begin() + i);
-			i--;
-		}
-	}
-
-	unsigned long i = 0;
-	while(i < this->shard_ranges.size() && this->shard_ranges.at(i) < shard_num)
-	{
-		i++;
-
-		if(this->shard_ranges.at(i) > shard_num)
-		{
-			unsigned long next_range_end = this->shard_ranges.at(i);
-			this->shard_ranges.at(i) = shard_num - 1;
-			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, next_range_end);
-			this->shard_ranges.insert(this->shard_ranges.begin() + i + 1, shard_num + 1);
-			if(this->shard_ranges.at(i + 1) == this->shard_ranges.at(i + 2))
-			{
-				this->shard_singles.push_back(shard_num + 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i + 1, this->shard_ranges.begin() + i + 3);
-			}
-			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
-			{
-				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
-			}
-		}
-		else if(this->shard_ranges.at(i) == shard_num)
-		{
-			this->shard_ranges.at(i)--;
-			if(this->shard_ranges.at(i) == this->shard_ranges.at(i - 1))
-			{
-				this->shard_singles.push_back(shard_num - 1);
-				this->shard_ranges.erase(this->shard_ranges.begin() + i - 1, this->shard_ranges.begin() + i + 1);
-			}
-		}
-
-		i++;
-	}
-
-	if(i < this-> shard_ranges.size() && this->shard_ranges.at(i) == shard_num)
-	{
-		this->shard_ranges.at(i) = shard_num + 1;
-		if(this->shard_ranges.at(i) == this->shard_ranges.at(i + 1))
-		{
-			this->shard_singles.push_back(shard_num + 1);
-			this->shard_ranges.erase(this->shard_ranges.begin() + i, this->shard_ranges.begin() + i + 2);
-		}
-	}
 
 	// write shard to a shard file
 	
@@ -444,27 +214,14 @@ bool ShardManager::shard_available(unsigned long const shard_num)
 	if(this->disabled)
 		return false;
 
-	bool exists_in_local_range = false;
-
-	for(unsigned int i = 0; i < this->shard_singles.size(); i++)
-		if(this->shard_singles.at(i) == shard_num)
-			exists_in_local_range = true;
-
-	for(unsigned int i = 0; i < this->shard_ranges.size(); i+=2)
-		if(shard_num >= this->shard_ranges.at(i) && shard_num <= this->shard_ranges.at(i + 1))
-			exists_in_local_range = true;
-
-	if(this->fill_mode)
-		return !exists_in_local_range;
-	else
-		return exists_in_local_range;
+	this->rl.is_in_list(shard_num);
 }
 
 bool ShardManager::is_done()
 {
 	if(this->disabled)
 		return false;
-	return this->shard_ranges.empty() && this->shard_singles.empty();
+	return this->rl.get_single_list.empty() && this->rl.get_range_list.empty();
 }
 
 std::string ShardManager::get_filename()
