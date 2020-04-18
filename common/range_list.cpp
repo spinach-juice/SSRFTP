@@ -1,6 +1,6 @@
 #include "range_list.h"
 #include <algorithm>
-
+#include <iostream>
 
 RangeList::RangeList()
 {
@@ -92,13 +92,13 @@ std::vector<unsigned long> RangeList::get_range_list()
 	std::vector<unsigned long> list;
 
 	while(curr != nullptr)
-	{
+	{std::cout << "r start " << curr->start << ' ' << curr->end << std::endl;
 		if(curr->start != curr->end)
 		{
 			list.push_back(curr->start);
 			list.push_back(curr->end);
 		}
-
+		std::cout << "r end " << curr->start << ' ' << curr->end << std::endl;
 		curr = curr->next;
 	}
 

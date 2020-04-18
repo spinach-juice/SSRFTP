@@ -37,7 +37,7 @@ void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardMan
 }
 
 void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
-{std::cout << "recieved file shard" << std::endl;
+{
 	Packet p = get_packet(m);
 	unsigned long shard_num;
 	unsigned short trans_id;
@@ -45,7 +45,7 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 	unsigned short shard_size;
 
 	if(interpret_file_shard(p, shard_num, trans_id, shard_data, shard_size))
-	{
+	{std::cout << "recieved file shard " << shard_num << std::endl;
 		if(!(manager_map[trans_id].shard_available(shard_num)))
 		{
 			manager_map[trans_id].add_shard(shard_num, shard_data, shard_size);
