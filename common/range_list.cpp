@@ -1,6 +1,5 @@
 #include "range_list.h"
 #include <algorithm>
-#include <iostream>
 
 RangeList::RangeList()
 {
@@ -309,11 +308,11 @@ bool RangeList::is_in_list(unsigned long num)
 {
 	if(num < this->minimum || num > this->maximum)
 		return false;
-	std::cout << "Is " << num << " in list?\n";
+
 	dual_link* current_range = this->headptr;
 
 	while(current_range != nullptr)
-	{std::cout << "start " << current_range->start << " end " << current_range->end << std::endl;
+	{
 		if(num >= current_range->start && num <= current_range->end)
 			return true;
 		else if(num < current_range->start)

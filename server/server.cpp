@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
-{std::cout << "recieved client start from " << get_endpoint(m) << std::endl;
+{
 	char md5_chk[32];
 	unsigned long long file_size;
 	unsigned long num_shards;
@@ -45,7 +45,7 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 	unsigned short shard_size;
 
 	if(interpret_file_shard(p, shard_num, trans_id, shard_data, shard_size))
-	{std::cout << "recieved file shard " << shard_num << std::endl;
+	{
 		if(!(manager_map[trans_id].shard_available(shard_num)))
 		{
 			manager_map[trans_id].add_shard(shard_num, shard_data, shard_size);
@@ -74,15 +74,11 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 }
 
 void handle_transfer_complete(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
-{std::cout << "recieved transfer complete" << std::endl;
+{
 }
 
 int main()
 {
-//    server test_server;
-    
-//    test_server.start_server();
-
 	Communicator com;
 
 	std::unordered_map<unsigned short, ShardManager> sms;
