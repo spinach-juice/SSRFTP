@@ -152,18 +152,7 @@ unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 	if(this->disabled)
 		return nullptr;
 
-	std::vector<unsigned long> shard_singles = this->rl.get_single_list();
-
-	num_singles = (unsigned long)shard_singles.size();
-
-	if(this->single_array != nullptr)
-		delete[] this->single_array;
-	this->single_array = new unsigned long[num_singles];
-
-	for(unsigned long i = 0; i < num_singles; i++)
-		this->single_array[i] = shard_singles.at(i);
-
-	return this->single_array;
+	return this->rl.get_single_list(num_singles);
 }
 
 unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
@@ -171,18 +160,9 @@ unsigned long* ShardManager::get_shard_ranges(unsigned long& num_ranges)
 	if(this->disabled)
 		return nullptr;
 
-	std::vector<unsigned long> shard_ranges = this->rl.get_range_list();
-
-	num_ranges = (unsigned long)shard_ranges.size() / 2;
-
-	if(this->range_array != nullptr)
-		delete[] this->range_array;
-	this->range_array = new unsigned long[num_ranges * 2];
-
-	for(unsigned long i = 0; i < num_ranges * 2; i++)
-		this->range_array[i] = shard_ranges.at(i);
-
-	return this->range_array;
+	unsigned long* array = this->rl.get_range_list(num_ranges);
+	num_ranges /= 2;
+	return array;
 }
 
 void ShardManager::add_shard(unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const shard_size)
@@ -228,7 +208,13 @@ bool ShardManager::is_done()
 {
 	if(this->disabled)
 		return false;
-	return this->rl.get_single_list().empty() && this->rl.get_range_list().empty();
+
+	unsigned long size1 = 0;
+	unsigned long size2 = 0;
+	this->rl.get_single_list(size1);
+	this->rl.get_range_list(size2);
+
+	return size1 == 0 && size2 == 0;
 }
 
 std::string ShardManager::get_filename()

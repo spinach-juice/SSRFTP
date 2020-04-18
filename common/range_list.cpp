@@ -3,27 +3,29 @@
 #include <iostream>
 
 RangeList::RangeList()
-{
+{std::cout << "creating1\n";
 	this->minimum = 0;
 	this->maximum = 0;
 	this->headptr = nullptr;
 }
 
 RangeList::RangeList(unsigned long min, unsigned long max)
-{
+{std::cout << "creating2\n";
 	this->init(min, max);
 }
 
-RangeList::RangeList(const RangeList& copy)
-{
+RangeList& RangeList::operator=(const RangeList& copy)
+{std::cout << "COPYCALL2\n";
 	this->minimum = copy.minimum;
 	this->maximum = copy.maximum;
+	this->single_list = nullptr;
+	this->range_list = nullptr;
 
 	dual_link* curr_cp = copy.headptr;
 	if(curr_cp == nullptr)
 	{
 		this->headptr = nullptr;
-		return;
+		return *this;
 	}
 
 	this->headptr = new dual_link;
@@ -45,10 +47,11 @@ RangeList::RangeList(const RangeList& copy)
 
 		curr_cp = curr_cp->next;
 	}
+	return *this;
 }
 
 RangeList::~RangeList()
-{
+{std::cout << "deleting\n";
 	dual_link* curr = this->headptr;
 	dual_link* temp = nullptr;
 
@@ -58,6 +61,12 @@ RangeList::~RangeList()
 		curr = curr->next;
 		delete temp;
 	}
+
+	if(this->single_list != nullptr)
+		delete[] this->single_list;
+
+	if(this->range_list != nullptr)
+		delete[] this->range_list;
 }
 
 void RangeList::init(unsigned long min, unsigned long max)
@@ -68,41 +77,73 @@ void RangeList::init(unsigned long min, unsigned long max)
 	this->headptr->next = nullptr;
 	this->headptr->start = min;
 	this->headptr->end = max;
+	this->single_list = nullptr;
+	this->range_list = nullptr;
 }
 
-std::vector<unsigned long> RangeList::get_single_list()
+unsigned long* RangeList::get_single_list(unsigned long& size)
 {
 	dual_link* curr = this->headptr;
-	std::vector<unsigned long> list;
+	size = 0;
 
 	while(curr != nullptr)
 	{
 		if(curr->start == curr->end)
-			list.push_back(curr->start);
+			size++;
 
 		curr = curr->next;
 	}
 
-	return list;
-}
+	if(this->single_list != nullptr)
+		delete[] this->single_list;
 
-std::vector<unsigned long> RangeList::get_range_list()
-{
-	dual_link* curr = this->headptr;
-	std::vector<unsigned long> list;
+	this->single_list = new unsigned long[size];
+
+	curr = this->headptr;
+	size = 0;
 
 	while(curr != nullptr)
-	{std::cout << "r start " << curr->start << ' ' << curr->end << std::endl;
-		if(curr->start != curr->end)
+	{
+		if(curr->start == curr->end)
 		{
-			list.push_back(curr->start);
-			list.push_back(curr->end);
+			this->single_list[size++] = curr->start;
 		}
-		std::cout << "r end " << curr->start << ' ' << curr->end << std::endl;
 		curr = curr->next;
 	}
 
-	return list;
+	return this->single_list;
+}
+
+unsigned long* RangeList::get_range_list(unsigned long& size)
+{
+	dual_link* curr = this->headptr;
+	size = 0;
+
+	while(curr != nullptr)
+	{
+		if(curr->start != curr->end)
+			size += 2;
+		curr = curr->next;
+	}
+
+	if(this->range_list != nullptr)
+		delete[] this->range_list;
+std::cout << "array size " << size << std::endl;
+	this->range_list = new unsigned long[size];
+std::cout << "a\n";
+	curr = this->headptr;
+	size = 0;
+
+	while(curr != nullptr)
+	{
+		if(curr->start != curr->end)
+		{
+			this->range_list[size++] = curr->start;
+			this->range_list[size++] = curr->end;
+		}
+		curr = curr->next;
+	}std::cout << "a\n";
+	return this->range_list;
 }
 
 void RangeList::remove(unsigned long num)

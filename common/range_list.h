@@ -15,11 +15,11 @@ class RangeList
 public:
 	RangeList();
 	RangeList(unsigned long min, unsigned long max);
-	RangeList(const RangeList&);
+	RangeList& operator=(const RangeList&);
 	~RangeList();
 
-	std::vector<unsigned long> get_single_list();
-	std::vector<unsigned long> get_range_list();
+	unsigned long* get_single_list(unsigned long& size);
+	unsigned long* get_range_list(unsigned long& size);
 
 	void init(unsigned long min, unsigned long max);
 
@@ -36,6 +36,9 @@ public:
 private:
 	unsigned long minimum;
 	unsigned long maximum;
+
+	unsigned long* single_list;
+	unsigned long* range_list;
 
 	dual_link* headptr;
 };
