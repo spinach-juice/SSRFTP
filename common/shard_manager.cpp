@@ -38,7 +38,7 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 	this->fill_mode = true;
 	strcpy(this->attached_file, filename);
 
-	this->rl.init(0, num_shards);
+	this->rl.init(0, num_shards - 1);
 
 	this->shard_max = num_shards - 1;
 	this->single_array = nullptr;

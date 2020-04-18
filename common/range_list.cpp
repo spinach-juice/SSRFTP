@@ -3,19 +3,19 @@
 #include <iostream>
 
 RangeList::RangeList()
-{std::cout << "creating1\n";
+{
 	this->minimum = 0;
 	this->maximum = 0;
 	this->headptr = nullptr;
 }
 
 RangeList::RangeList(unsigned long min, unsigned long max)
-{std::cout << "creating2\n";
+{
 	this->init(min, max);
 }
 
 RangeList& RangeList::operator=(const RangeList& copy)
-{std::cout << "COPYCALL2\n";
+{
 	this->minimum = copy.minimum;
 	this->maximum = copy.maximum;
 	this->single_list = nullptr;
@@ -51,7 +51,7 @@ RangeList& RangeList::operator=(const RangeList& copy)
 }
 
 RangeList::~RangeList()
-{std::cout << "deleting\n";
+{
 	dual_link* curr = this->headptr;
 	dual_link* temp = nullptr;
 
@@ -128,9 +128,9 @@ unsigned long* RangeList::get_range_list(unsigned long& size)
 
 	if(this->range_list != nullptr)
 		delete[] this->range_list;
-std::cout << "array size " << size << std::endl;
+
 	this->range_list = new unsigned long[size];
-std::cout << "a\n";
+
 	curr = this->headptr;
 	size = 0;
 
@@ -142,7 +142,7 @@ std::cout << "a\n";
 			this->range_list[size++] = curr->end;
 		}
 		curr = curr->next;
-	}std::cout << "a\n";
+	}
 	return this->range_list;
 }
 
@@ -309,11 +309,11 @@ bool RangeList::is_in_list(unsigned long num)
 {
 	if(num < this->minimum || num > this->maximum)
 		return false;
-
+	std::cout << "Is " << num << " in list?\n";
 	dual_link* current_range = this->headptr;
 
 	while(current_range != nullptr)
-	{
+	{std::cout << "start " << current_range->start << " end " << current_range->end << std::endl;
 		if(num >= current_range->start && num <= current_range->end)
 			return true;
 		else if(num < current_range->start)
