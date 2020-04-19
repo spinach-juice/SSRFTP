@@ -6,6 +6,10 @@
 #include <iostream>
 #include <unistd.h>
 
+std::vector<Message> next_shard_request;
+bool shard_request_ready = false;
+//std::unordered_map<unsigned short, Message> transfer_complete_msgs;
+
 void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
 {
 	char md5_chk[32];
@@ -68,13 +72,42 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 				Message msg_response = package_message(response, get_endpoint(m));
 
 				com.send_message(msg_response);
+
+//				transfer_complete_msgs[trans_id] = msg_response;
 			}
+		}
+		else
+		{
+			// We already have this shard
+			// Queue up another shard request to be sent
+
+			unsigned long num_sing;
+			unsigned long* sing = manager_map[trans_id].get_shard_singles(num_sing);
+			unsigned long num_rang;
+			unsigned long* rang = manager_map[trans_id].get_shard_ranges(num_rang);
+
+			Packet rq = build_shard_request_range(trans_id, sing, num_sing, rang, num_rang);
+			if(next_shard_request.empty())
+				next_shard_request.push_back(package_message(rq, get_endpoint(m)));
+			else
+				next_shard_request.at(0) = package_message(rq, get_endpoint(m));
+			shard_request_ready = true;
 		}
 	}
 }
 
 void handle_transfer_complete(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
 {
+/*	Packet p = get_packet(m);
+	unsigned short trans_id;
+	bool success_state;
+
+	if(interpret_transfer_complete(p, trans_id, success_state))
+	{
+		Packet p2 = get_packet(transfer_complete_msgs[trans_id]);
+		if(p == p2)
+			transfer_complete_msgs.erase(trans_id);
+	}*/
 }
 
 int main()
@@ -86,6 +119,7 @@ int main()
 
 	while(true)
 	{
+		unsigned char i = 0;
 		while(com.message_available())
 		{
 			Message m = com.read_message();
@@ -115,9 +149,29 @@ int main()
 				}
 			break;
 			}
+
+			if(i == 0)
+			{
+//				for(auto x : transfer_complete_msgs)
+//					com.send_message(x.second);
+				if(shard_request_ready)
+				{
+					com.send_message(next_shard_request.at(0));
+					shard_request_ready = false;
+				}
+			}
 		}
 
-		usleep(10000);
+//		for(auto x : transfer_complete_msgs)
+//			com.send_message(x.second);
+
+		if(shard_request_ready)
+		{
+			com.send_message(next_shard_request.at(0));
+			shard_request_ready = false;
+		}
+
+		usleep(100000);
 	}
 }
 
