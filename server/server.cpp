@@ -8,7 +8,6 @@
 
 std::vector<Message> next_shard_request;
 bool shard_request_ready = false;
-//std::unordered_map<unsigned short, Message> transfer_complete_msgs;
 
 void handle_client_start(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
 {
@@ -72,8 +71,6 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 				Message msg_response = package_message(response, get_endpoint(m));
 
 				com.send_message(msg_response);
-
-//				transfer_complete_msgs[trans_id] = msg_response;
 			}
 		}
 		else
@@ -98,16 +95,38 @@ void handle_file_shard(Message& m, std::unordered_map<unsigned short, ShardManag
 
 void handle_transfer_complete(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
 {
-/*	Packet p = get_packet(m);
-	unsigned short trans_id;
-	bool success_state;
 
-	if(interpret_transfer_complete(p, trans_id, success_state))
+}
+
+void handle_semi_robust(Message& m, std::unordered_map<unsigned short, ShardManager>& manager_map, std::unordered_map<unsigned short, char*>& md5_sums, Communicator& com)
+{
+	Packet p = get_packet(m);
+	unsigned long shard_num;
+	unsigned short trans_id;
+	unsigned char shard_data[65524];
+	unsigned short shard_size;
+	bool final_shard;
+
+	if(interpret_semi_robust_shard(p, trans_id, final_shard, shard_num, shard_data, shard_size))
 	{
-		Packet p2 = get_packet(transfer_complete_msgs[trans_id]);
-		if(p == p2)
-			transfer_complete_msgs.erase(trans_id);
-	}*/
+		if(manager_map.count(trans_id) == 0 && final_shard)
+		{
+			ShardManager new_sm("Semi-Robust_Transfer", trans_id, shard_num + 1);
+			manager_map[trans_id] = new_sm;
+
+			new_sm.disable(); // prevent duping shard manager
+
+			manager_map[trans_id].add_shard(shard_num, shard_data, shard_size);
+			if(manager_map[trans_id].is_done())
+				manager_map.erase(trans_id);
+		}
+		else if(manager_map.count(trans_id) == 1 && !(manager_map[trans_id].shard_available(shard_num)))
+		{
+			manager_map[trans_id].add_shard(shard_num, shard_data, shard_size);
+			if(manager_map[trans_id].is_done())
+				manager_map.erase(trans_id);
+		}
+	}
 }
 
 int main()
@@ -147,13 +166,16 @@ int main()
 				{
 					handle_transfer_complete(m, sms, md5s, com);
 				}
+
+			case 5: // semi-robust shard
+				{
+					handle_semi_robust(m, sms, md5s, com);
+				}
 			break;
 			}
 
 			if(i == 0)
 			{
-//				for(auto x : transfer_complete_msgs)
-//					com.send_message(x.second);
 				if(shard_request_ready)
 				{
 					com.send_message(next_shard_request.at(0));
@@ -161,9 +183,6 @@ int main()
 				}
 			}
 		}
-
-//		for(auto x : transfer_complete_msgs)
-//			com.send_message(x.second);
 
 		if(shard_request_ready)
 		{
