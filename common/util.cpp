@@ -164,25 +164,6 @@ std::vector<unsigned long> ulong_array_singles(unsigned long const * const array
 	return singles;
 }
 
-unsigned long long getFileSize(std::ifstream& file)
-{
-	unsigned long long fileSize;
-
-	file.seekg(0,file.end);
-	fileSize = file.tellg();
-	return fileSize;
-}
-void getFileContents(std::ifstream& file,unsigned long long fileSize, char* buffer)
-{
-	char temp[fileSize];
-	
-	file.seekg(0,file.beg);
-	file.read(buffer, fileSize);
-	
-	//strncpy(buffer, temp,fileSize);
-	
-}
-
 std::vector<unsigned long> ulong_array_ranges(unsigned long const * const array, unsigned long const length)
 {
 	std::vector<unsigned long> ranges;
