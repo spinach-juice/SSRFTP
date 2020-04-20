@@ -283,6 +283,36 @@ Packet build_transfer_complete(unsigned short const trans_id, bool const success
 	return p;
 }
 
+Packet build_semi_robust_shard(unsigned short const trans_id, bool const final_shard, unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const data_size)
+{
+	unsigned short packet_length = data_size + 11;
+	unsigned char* bytes = new unsigned char[packet_length + 1];
+	bytes[0] = 0x00;
+	bytes[1] = 0x01;
+	bytes[2] = (unsigned char)(packet_length >> 8);
+	bytes[3] = (unsigned char)(packet_length & 0x00ff);
+	if(final_shard)
+		bytes[6] = (unsigned char)(((shard_num & 0x7f000000) >> 24) | 0x00000080);
+	else
+		bytes[6] = (unsigned char)((shard_num & 0x7f000000) >> 24);
+	bytes[7] = (unsigned char)((shard_num & 0x00ff0000) >> 16);
+	bytes[8] = (unsigned char)((shard_num & 0x0000ff00) >> 8);
+	bytes[9] = (unsigned char)(shard_num & 0x000000ff);
+	bytes[10] = (unsigned char)((trans_id & 0xff00) >> 8);
+	bytes[11] = (unsigned char)(trans_id & 0x00ff);
+
+	unsigned int i = 0;
+	for(; i < data_size; i++)
+		bytes[12 + i] = shard_data[i];
+
+	Packet p(bytes);
+	p.replace_checksum();
+
+	delete[] bytes;
+	return p;
+}
+
+
 bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& file_size, unsigned long& num_shards, unsigned short& trans_id, char* destination_path, unsigned short& path_length)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[0] != 0x00 || p.size() < 32)
@@ -401,4 +431,28 @@ bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& succ
 		success_state = false;
 
 	return p.verify_checksum();
+}
+
+bool interpret_semi_robust_shard(Packet& p, unsigned short& trans_id, bool& final_shard, unsigned long& shard_num, unsigned char* shard_data, unsigned short& data_size)
+{
+	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x05 || p.size() < 12)
+		return false;
+
+	shard_num = (((unsigned long)(p.bytestream()[6])) << 24) | (((unsigned long)(p.bytestream()[7])) << 16) | (((unsigned long)(p.bytestream()[8])) << 8) | ((unsigned long)(p.bytestream()[9]));
+
+	if(shard_num & 0x80000000)
+		final_shard = true;
+	else
+		final_shard = false;
+
+	shard_num &= 0x7fffffff;
+
+	trans_id = (((unsigned short)(p.bytestream()[10])) << 8) | ((unsigned short)(p.bytestream()[11]));
+	data_size = p.size() - 12;
+	unsigned short i = 12;
+	for(; i < p.size(); i++)
+		shard_data[i - 12] = p.bytestream()[i];
+
+	return p.verify_checksum();
+
 }

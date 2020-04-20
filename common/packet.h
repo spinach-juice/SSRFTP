@@ -37,6 +37,7 @@ Packet build_shard_end(unsigned short const trans_id);
 Packet build_shard_request(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned long const num_missing_shards);
 Packet build_transfer_complete(unsigned short const trans_id, bool const success_state);
 Packet build_shard_request_range(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned short const num_missing_shards, unsigned long const * const missing_ranges, unsigned short const num_missing_ranges);
+Packet build_semi_robust_shard(unsigned short const trans_id, bool const final_shard, unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const data_size);
 
 
 
@@ -46,5 +47,6 @@ bool interpret_shard_end(Packet& p, unsigned short& trans_id);
 bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long* missing_shards, unsigned long& num_missing_shards);
 bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long>& missing_singles, std::vector<unsigned long>& missing_ranges);
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state);
+bool interpret_semi_robust_shard(Packet& p, unsigned short& trans_id, bool& final_shard, unsigned long& shard_num, unsigned char* shard_data, unsigned short& data_size);
 
 #endif
