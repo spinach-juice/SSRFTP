@@ -1,6 +1,7 @@
 #include "range_list.h"
 #include <algorithm>
 
+
 RangeList::RangeList()
 {
 	this->minimum = 0;
@@ -13,6 +14,7 @@ RangeList::RangeList(unsigned long min, unsigned long max)
 	this->init(min, max);
 }
 
+// Copy constructor for assignment
 RangeList& RangeList::operator=(const RangeList& copy)
 {
 	this->minimum = copy.minimum;
@@ -150,14 +152,18 @@ void RangeList::remove(unsigned long num)
 	if(!this->is_in_list(num))
 		return;
 
+	// Search through linked list.
+
 	dual_link* current_range = this->headptr;
 	dual_link* last_range = nullptr;
 	bool removed = false;
 
 	while(!removed)
 	{
+		// If the number to remove is at the beginning of the current range,
 		if(num == current_range->start)
 		{
+			// If the range is only 1 in size just remove it
 			if(current_range->start == current_range->end)
 			{
 				if(current_range == this->headptr)
@@ -167,11 +173,14 @@ void RangeList::remove(unsigned long num)
 
 				delete current_range;
 			}
+			// Otherwise just increment the range start
 			else
 				current_range->start++;
 
 			removed = true;
 		}
+		// If the number to remove is inside the current range
+		// Split current range into two
 		else if(num > current_range->start && num < current_range->end)
 		{
 			dual_link* temp = current_range->next;
@@ -183,6 +192,7 @@ void RangeList::remove(unsigned long num)
 
 			removed = true;
 		}
+		// If the number to remove is at the end of the current range, decrement the end
 		else if(num == current_range->end)
 		{
 			current_range->end--;
@@ -203,14 +213,18 @@ void RangeList::add(unsigned long num)
 	if(this->is_in_list(num))
 		return;
 
+	// Search through linked list.
+
 	bool added = false;
 
 	dual_link* current_range = this->headptr;
 
 	while(!added)
 	{
+		// If the number to add is 1 after the end of the current range
 		if(num == current_range->end + 1)
 		{
+			// If it links two ranges, join them together
 			if(num == current_range->next->start - 1)
 			{
 				current_range->end = current_range->next->end;
@@ -218,19 +232,24 @@ void RangeList::add(unsigned long num)
 				current_range->next = current_range->next->next;
 				delete temp;
 			}
+			// Otherwise, just increment the end of the range
 			else
 				current_range->end++;
 
 			added = true;
 		}
+		// If the number to add is 1 before the start of the current range
 		else if(num == current_range->start - 1)
 		{
+			// Just decrement the start of the range
 			current_range->start--;
 
 			added = true;
 		}
+		// If a new range needs to be added
 		else if(num > current_range->end && num < current_range->next->start)
 		{
+			// Insert a new range into the linked list
 			dual_link* temp = current_range->next;
 			current_range->next = new dual_link;
 			current_range->next->start = num;
@@ -247,6 +266,8 @@ void RangeList::add(unsigned long num)
 
 void RangeList::impress(std::vector<unsigned long> singles, std::vector<unsigned long> ranges)
 {
+	// Delete and reconstruct linked list based on input
+
 	dual_link* curr = this->headptr;
 	dual_link* temp = nullptr;
 
@@ -323,7 +344,6 @@ bool RangeList::is_in_list(unsigned long num)
 
 	return false;
 }
-
 
 void RangeList::set_min(unsigned long num)
 {

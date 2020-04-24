@@ -1,6 +1,7 @@
 #include "packet.h"
 #include "util.h"
 
+// The bytestream passed in MUST be valid packet data. It relies on having the Packet Size field in the Packet filled out.
 Packet::Packet(unsigned char const * const bytestream)
 {
 	this->data_size = ((unsigned short)bytestream[2] << 8) + (unsigned short)bytestream[3];
@@ -12,6 +13,7 @@ Packet::Packet(unsigned char const * const bytestream)
 		this->data[i] = bytestream[i];
 }
 
+// Copy constructor.
 Packet::Packet(const Packet& p)
 {
 	this->data_size = p.data_size;
@@ -45,11 +47,13 @@ unsigned char const * const Packet::bytestream()
 	return data;
 }
 
+// Check whether the checksum is correct. Returns true if it is, false otherwise.
 bool Packet::verify_checksum()
 {
 	return this->calc_checksum() == ((unsigned short)this->data[4] << 8) + (unsigned short)this->data[5];
 }
 
+// Return a string with the name of the packet type.
 std::string Packet::type()
 {
 	unsigned short hex_type = ((unsigned short)this->data[0] << 8) + (unsigned short)this->data[1];
@@ -80,16 +84,19 @@ std::string Packet::type()
 	return (std::string)"Invalid Packet ID Number";
 }
 
+// Return an integer representing packet type.
 unsigned short Packet::int_type()
 {
 	return ((unsigned short)this->data[0] << 8) + (unsigned short)this->data[1];
 }
 
+// Returns the size of the packet.
 unsigned int Packet::size()
 {
 	return (unsigned int)(this->data_size) + 1;
 }
 
+// Calculates a CRC16 checksum of the packet.
 unsigned short Packet::calc_checksum()
 {
 	unsigned short chksum = 0;
@@ -102,6 +109,7 @@ unsigned short Packet::calc_checksum()
 	return chksum;
 }
 
+// Replaces the values in the Checksum fields with the correct value.
 void Packet::replace_checksum()
 {
 	unsigned short chksum = this->calc_checksum();
@@ -110,6 +118,7 @@ void Packet::replace_checksum()
 	this->data[5] = (unsigned char)(chksum & 0x00ff);
 }
 
+// Converts given data into a Client Start Packet. See User Manual for details.
 Packet build_client_start(char const * const md5_chksum, unsigned long long const file_size, unsigned long const num_shards, unsigned short const trans_id, char const * const destination_path, unsigned short const path_length)
 {
 	unsigned short packet_length = path_length + 32;
@@ -141,6 +150,7 @@ Packet build_client_start(char const * const md5_chksum, unsigned long long cons
 	return p;
 }
 
+// Converts given data into a File Shard Packet. See User Manual for details.
 Packet build_file_shard(unsigned long const shard_num, unsigned short const trans_id, unsigned char const * const shard_data, unsigned short const data_size)
 {
 	unsigned short packet_length = data_size + 11;
@@ -167,6 +177,7 @@ Packet build_file_shard(unsigned long const shard_num, unsigned short const tran
 	return p;
 }
 
+// Converts given data into a Shard End Packet. This packet is discontinued and not currently a valid part of the protocol.
 Packet build_shard_end(unsigned short const trans_id)
 {
 	unsigned char bytes[8] = {0x00, 0x02, 0x00, 0x07};
@@ -179,6 +190,8 @@ Packet build_shard_end(unsigned short const trans_id)
 	return p;
 }
 
+// Converts given data into a Shard Request Packet. See User Manual for details.
+// It is recommended to instead use the Shard Request Range builder because it uses less resources.
 Packet build_shard_request(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned long const num_missing_shards)
 {
 	unsigned long * ordered_shards = new unsigned long[num_missing_shards];
@@ -226,6 +239,7 @@ Packet build_shard_request(unsigned short const trans_id, unsigned long const * 
 	return p;
 }
 
+// Converts given data into a Shard Request Packet. See User Manual for details.
 Packet build_shard_request_range(unsigned short const trans_id, unsigned long const * const missing_shards, unsigned short const num_missing_shards, unsigned long const * const missing_ranges, unsigned short const num_missing_ranges)
 {
 	unsigned long i = 0;
@@ -267,6 +281,7 @@ Packet build_shard_request_range(unsigned short const trans_id, unsigned long co
 
 }
 
+// Converts given data into a Transfer Complete Packet. See User Manual for details.
 Packet build_transfer_complete(unsigned short const trans_id, bool const success_state)
 {
 	unsigned char bytes[9] = {0x00, 0x04, 0x00, 0x08};
@@ -283,6 +298,7 @@ Packet build_transfer_complete(unsigned short const trans_id, bool const success
 	return p;
 }
 
+// Converts given data into a Semi Robust Shard Packet. See User Manual for details.
 Packet build_semi_robust_shard(unsigned short const trans_id, bool const final_shard, unsigned long const shard_num, unsigned char const * const shard_data, unsigned short const data_size)
 {
 	unsigned short packet_length = data_size + 11;
@@ -313,6 +329,7 @@ Packet build_semi_robust_shard(unsigned short const trans_id, bool const final_s
 }
 
 
+// Pulls information out of a Client Start packet and puts it into the given other variables.
 bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& file_size, unsigned long& num_shards, unsigned short& trans_id, char* destination_path, unsigned short& path_length)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[0] != 0x00 || p.size() < 32)
@@ -332,6 +349,7 @@ bool interpret_client_start(Packet& p, char* md5_chksum, unsigned long long& fil
 	return p.verify_checksum();
 }
 
+// Pulls information out of a File Shard packet and puts it into the given other variables.
 bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& trans_id, unsigned char* shard_data, unsigned short& data_size)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x01 || p.size() < 12)
@@ -347,6 +365,7 @@ bool interpret_file_shard(Packet& p, unsigned long& shard_num, unsigned short& t
 	return p.verify_checksum();
 }
 
+// Pulls information out of a Shard End packet. This packet is deprecated and not part of the current protocol.
 bool interpret_shard_end(Packet& p, unsigned short& trans_id)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x02 || p.size() != 8)
@@ -357,6 +376,8 @@ bool interpret_shard_end(Packet& p, unsigned short& trans_id)
 	return p.verify_checksum();
 }
 
+// Pulls information out of a Shard Request packet and puts it into the given other variables.
+// It is recommended to instead use the Shard Range Request interpreter because it uses less resources.
 bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long* missing_shards, unsigned long& num_missing_shards)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x03 || p.size() < 10)
@@ -388,6 +409,7 @@ bool interpret_shard_request(Packet& p, unsigned short& trans_id, unsigned long*
 	return p.verify_checksum();
 }
 
+// Pulls information out of a Shard Request packet and puts it into the given other variables.
 bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vector<unsigned long>& missing_singles, std::vector<unsigned long>& missing_ranges)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x03 || p.size() < 10)
@@ -419,6 +441,7 @@ bool interpret_shard_request_range(Packet& p, unsigned short& trans_id, std::vec
 	return p.verify_checksum();
 }
 
+// Pulls information out of a Transfer Complete packet and puts it into the given other variables.
 bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& success_state)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x04 || p.size() != 9)
@@ -433,6 +456,7 @@ bool interpret_transfer_complete(Packet& p, unsigned short& trans_id, bool& succ
 	return p.verify_checksum();
 }
 
+// Pulls information out of a Semi Robust Shard packet and puts it into the given other variables.
 bool interpret_semi_robust_shard(Packet& p, unsigned short& trans_id, bool& final_shard, unsigned long& shard_num, unsigned char* shard_data, unsigned short& data_size)
 {
 	if(p.bytestream()[0] != 0x00 || p.bytestream()[1] != 0x05 || p.size() < 12)

@@ -6,11 +6,13 @@
 
 ShardManager::ShardManager(char const * const filename, unsigned short const trans_id)
 {
+	// File is coming from disk, so fill mode is off
 	this->fill_mode = false;
 	strcpy(this->attached_file, filename);
 
 	FILE* open_file = nullptr;
 
+	// Get file size
 	open_file = fopen(filename, "r");
 	if(open_file == nullptr)
 		throw std::runtime_error("ShardManager could not open given file.");
@@ -19,6 +21,7 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 
 	long file_size = ftell(open_file);
 
+	// Number of shards is derived from file size
 	this->shard_max = (unsigned long)file_size / SHARD_SIZE_MAX;
 	if((unsigned long)file_size % SHARD_SIZE_MAX == 0)
 		this->shard_max--;
@@ -35,6 +38,7 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 
 ShardManager::ShardManager(char const * const filename, unsigned short const trans_id, unsigned long const num_shards)
 {
+	// File is coming from remote, so fill mode is on
 	this->fill_mode = true;
 	strcpy(this->attached_file, filename);
 
