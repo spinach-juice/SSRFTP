@@ -41,6 +41,13 @@ ShardManager::ShardManager(char const * const filename, unsigned short const tra
 	// File is coming from remote, so fill mode is on
 	this->fill_mode = true;
 	strcpy(this->attached_file, filename);
+	if(num_shards > 1)
+	{
+		this->shard_ranges.push_back(0);
+		this->shard_ranges.push_back(num_shards - 1);
+	}
+	else
+		this->shard_singles.push_back(0);
 
 	this->rl.init(0, num_shards - 1);
 
@@ -155,7 +162,6 @@ unsigned long* ShardManager::get_shard_singles(unsigned long& num_singles)
 {
 	if(this->disabled)
 		return nullptr;
-
 	return this->rl.get_single_list(num_singles);
 }
 
@@ -175,7 +181,6 @@ void ShardManager::add_shard(unsigned long const shard_num, unsigned char const 
 		return;
 
 	this->rl.remove(shard_num);
-
 	// write shard to a shard file
 	
 	char filename[40] = {0};
